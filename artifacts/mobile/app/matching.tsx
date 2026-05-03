@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Share } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,27 +11,28 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
-import { useChat } from '@/context/ChatContext';
-import AvatarDisplay from '@/components/AvatarDisplay';
 import GlassCard from '@/components/GlassCard';
 import BlobBackground from '@/components/BlobBackground';
 import { MOODS, PERSONALITIES, TEMPERAMENTS } from '@/utils/helpers';
 import colors from '@/constants/colors';
 
-const PINK = '#FF2D95';
-const CYAN = '#00D4FF';
+const PINK  = '#FF2D95';
+const CYAN  = '#00D4FF';
+const GREEN = '#00FF88';
 const MUTED = 'rgba(255,255,255,0.50)';
+
+type Phase = 'idle' | 'searching' | 'no_match';
 
 export default function MatchingScreen() {
   const insets = useSafeAreaInsets();
   const { user, isTeenMode } = useApp();
-  const { startMatching, isMatching, matchFound, confirmMatch, clearSession } = useChat();
-  const [phase, setPhase] = useState<'idle' | 'searching' | 'found'>('idle');
+  const [phase, setPhase] = useState<Phase>('idle');
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const pulse = useSharedValue(1);
+  const pulse  = useSharedValue(1);
   const rotate = useSharedValue(0);
   const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
   const rotStyle   = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotate.value * 360}deg` }] }));
@@ -40,32 +41,40 @@ export default function MatchingScreen() {
     if (phase === 'searching') {
       pulse.value  = withRepeat(withSequence(withTiming(1.12, { duration: 800 }), withTiming(1, { duration: 800 })), -1, true);
       rotate.value = withRepeat(withTiming(1, { duration: 2400, easing: Easing.linear }), -1, false);
+
+      // After 3 s, show honest "no match" state — no real users are available
+      searchTimerRef.current = setTimeout(() => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        setPhase('no_match');
+      }, 3000);
     }
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
   }, [phase]);
 
-  useEffect(() => {
-    if (matchFound) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setPhase('found');
-    }
-  }, [matchFound]);
-
-  async function handleFind() {
-    if (!user) return;
+  function handleFind() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setPhase('searching');
-    await startMatching(user.mood, user.goal, user.interests, user.personality, user.id, user.ageGroup);
   }
 
-  function handleStartChat() { confirmMatch(); router.replace('/conversation'); }
+  function handleTryAgain() {
+    setPhase('idle');
+  }
 
-  const moodEmoji         = MOODS.find(m => m.id === user?.mood)?.emoji ?? '😊';
-  const moodLabel         = MOODS.find(m => m.id === user?.mood)?.label ?? '';
-  const personalityLabel  = PERSONALITIES.find(p => p.id === user?.personality)?.label ?? '';
-  const temperamentLabel  = TEMPERAMENTS.find(t => t.id === user?.temperament)?.label ?? '';
-  const partnerMoodEmoji  = MOODS.find(m => m.id === matchFound?.mood)?.emoji ?? '😊';
-  const partnerMoodLabel  = MOODS.find(m => m.id === matchFound?.mood)?.label ?? '';
-  const partnerPersonalityLabel = PERSONALITIES.find(p => p.id === matchFound?.personality)?.label ?? '';
+  async function handleShareLink() {
+    const slug = user?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? '';
+    const url = `https://mindbridge.app/message/${slug}`;
+    await Share.share({
+      message: `Send me an anonymous message! Say anything — I won't know it's you 👀\n\n${url}`,
+      url,
+    });
+  }
+
+  const moodEmoji        = MOODS.find(m => m.id === user?.mood)?.emoji ?? '😊';
+  const moodLabel        = MOODS.find(m => m.id === user?.mood)?.label ?? '';
+  const personalityLabel = PERSONALITIES.find(p => p.id === user?.personality)?.label ?? '';
+  const temperamentLabel = TEMPERAMENTS.find(t => t.id === user?.temperament)?.label ?? '';
 
   return (
     <View style={styles.container}>
@@ -74,7 +83,7 @@ export default function MatchingScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 16 }]}>
         <TouchableOpacity
-          onPress={() => { clearSession(); router.back(); }}
+          onPress={() => router.back()}
           style={styles.backBtn}
         >
           <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.7)" />
@@ -106,6 +115,16 @@ export default function MatchingScreen() {
               </View>
             </GlassCard>
 
+            <GlassCard padding={16} style={styles.honestCard}>
+              <Text style={styles.honestEmoji}>ℹ️</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.honestTitle}>How matching works</Text>
+                <Text style={styles.honestBody}>
+                  MindBridge searches for real users with matching mood, goals, and interests. If no one is available, you can always talk to BridgeGuide AI or share your anonymous link.
+                </Text>
+              </View>
+            </GlassCard>
+
             <TouchableOpacity onPress={handleFind} activeOpacity={0.88} style={styles.findBtnWrap}>
               <LinearGradient
                 colors={colors.gradPrimary}
@@ -113,8 +132,8 @@ export default function MatchingScreen() {
                 style={styles.findBtn}
               >
                 <Text style={{ fontSize: 38 }}>🤝</Text>
-                <Text style={styles.findBtnText}>Find My Match</Text>
-                <Text style={styles.findBtnSub}>Smart matching in seconds</Text>
+                <Text style={styles.findBtnText}>Search for a Match</Text>
+                <Text style={styles.findBtnSub}>Checks for real users right now</Text>
               </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
@@ -131,9 +150,9 @@ export default function MatchingScreen() {
               </Animated.View>
             </Animated.View>
 
-            <Text style={styles.searchTitle}>Finding your match...</Text>
+            <Text style={styles.searchTitle}>Searching...</Text>
             <Text style={styles.searchSub}>
-              Checking mood, personality, goals, and interests{isTeenMode ? ' in Teen Mode' : ''}...
+              Looking for real users matching your profile{isTeenMode ? ' in Teen Mode' : ''}...
             </Text>
 
             <GlassCard style={styles.criteriaCard}>
@@ -145,53 +164,69 @@ export default function MatchingScreen() {
                 <View key={i} style={styles.criteriaRow}>
                   <Text style={{ fontSize: 16 }}>{c.emoji}</Text>
                   <Text style={styles.criteriaText}>{c.label}</Text>
-                  <Ionicons name="checkmark-circle" size={16} color="#00FF88" />
+                  <Ionicons name="sync" size={14} color={CYAN} />
                 </View>
               ))}
             </GlassCard>
           </Animated.View>
         )}
 
-        {/* ── Match found ──────────────────────────── */}
-        {phase === 'found' && matchFound && (
-          <Animated.View entering={FadeInDown.springify()} style={styles.foundContent}>
-            <Text style={styles.foundHeading}>Match Found! 🎉</Text>
+        {/* ── No match available ──────────────────── */}
+        {phase === 'no_match' && (
+          <Animated.View entering={FadeInDown.springify()} style={styles.noMatchContent}>
+            <View style={styles.noMatchIcon}>
+              <Text style={{ fontSize: 52 }}>😔</Text>
+            </View>
 
-            <GlassCard style={styles.matchCard} padding={24} neonBorder>
-              <AvatarDisplay iconIndex={matchFound.iconIndex} colorIndex={matchFound.colorIndex} size={72} showRing />
-              <Text style={styles.matchName}>{matchFound.username}</Text>
+            <Text style={styles.noMatchTitle}>No one is available right now</Text>
+            <Text style={styles.noMatchSub}>
+              We searched but couldn't find any real users matching your profile at this moment. Try again later or use one of the options below.
+            </Text>
 
-              <View style={styles.matchChips}>
-                {[
-                  { emoji: partnerMoodEmoji, label: partnerMoodLabel, color: PINK },
-                  { emoji: '🌊', label: partnerPersonalityLabel, color: CYAN },
-                  ...(matchFound.interests[0] ? [{ emoji: '✨', label: matchFound.interests[0], color: '#00FF88' }] : []),
-                ].map((c, i) => (
-                  <View key={i} style={[styles.matchChip, { borderColor: c.color + '40' }]}>
-                    <Text style={{ fontSize: 14 }}>{c.emoji}</Text>
-                    <Text style={[styles.matchChipText, { color: c.color }]}>{c.label}</Text>
-                  </View>
-                ))}
-              </View>
-
+            {/* Option 1: BridgeGuide AI */}
+            <TouchableOpacity
+              onPress={() => router.replace('/bridge-guide')}
+              activeOpacity={0.88}
+              style={styles.optionBtnWrap}
+            >
               <LinearGradient
-                colors={colors.gradPrimary}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={styles.compatBar}
+                colors={['#1A0B2E', '#2D1554']}
+                style={styles.optionBtn}
               >
-                <Text style={styles.compatText}>⚡ {matchFound.compatibilityScore}% Compatibility</Text>
-              </LinearGradient>
-            </GlassCard>
-
-            <TouchableOpacity onPress={handleStartChat} activeOpacity={0.88} style={styles.startBtnWrap}>
-              <LinearGradient colors={colors.gradSuccess} style={styles.startBtn}>
-                <Text style={{ fontSize: 20 }}>💬</Text>
-                <Text style={styles.startBtnText}>Start Conversation</Text>
+                <View style={styles.optionIcon}>
+                  <Text style={{ fontSize: 22 }}>✨</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.optionTitle}>Talk to BridgeGuide AI</Text>
+                  <Text style={styles.optionSub}>Get career, study, and life advice — or just chat</Text>
+                </View>
+                <View style={styles.aiBadge}>
+                  <Text style={styles.aiBadgeText}>AI</Text>
+                </View>
               </LinearGradient>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setPhase('idle')} style={styles.skipBtn}>
-              <Text style={styles.skipText}>Find a different match</Text>
+            {/* Option 2: Share link */}
+            <TouchableOpacity
+              onPress={handleShareLink}
+              activeOpacity={0.88}
+              style={[styles.optionBtnWrap, { borderWidth: 1, borderColor: 'rgba(0,212,255,0.30)', borderRadius: 18 }]}
+            >
+              <View style={[styles.optionBtn, { backgroundColor: 'rgba(0,212,255,0.07)' }]}>
+                <View style={[styles.optionIcon, { backgroundColor: 'rgba(0,212,255,0.15)' }]}>
+                  <Text style={{ fontSize: 22 }}>📤</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.optionTitle, { color: CYAN }]}>Share Your Anonymous Link</Text>
+                  <Text style={styles.optionSub}>Let people send you messages anonymously</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            {/* Option 3: Try again */}
+            <TouchableOpacity onPress={handleTryAgain} style={styles.tryAgainBtn}>
+              <Ionicons name="refresh" size={16} color={MUTED} />
+              <Text style={styles.tryAgainText}>Try searching again</Text>
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -201,70 +236,51 @@ export default function MatchingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050505' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 10,
-  },
-  backBtn: {
-    width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  headerTitle: { color: '#FFFFFF', fontSize: 15, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 2 },
-  content: { flex: 1, paddingHorizontal: 20, justifyContent: 'center', gap: 20 },
+  container:     { flex: 1, backgroundColor: '#050505' },
+  header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 10 },
+  backBtn:       { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)' },
+  headerTitle:   { color: '#FFFFFF', fontSize: 15, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 2 },
+  content:       { flex: 1, paddingHorizontal: 20, justifyContent: 'center', gap: 16 },
 
-  idleContent: { gap: 20 },
-  profileCard: { gap: 12 },
-  cardTitle: { color: 'rgba(255,255,255,0.45)', fontSize: 11, fontFamily: 'SpaceGrotesk_600SemiBold', letterSpacing: 1.8 },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 11, paddingVertical: 5,
-    backgroundColor: 'rgba(255,45,149,0.12)', borderRadius: 14,
-    borderWidth: 1, borderColor: 'rgba(255,45,149,0.25)', gap: 5,
-  },
-  chipText: { fontSize: 12, color: PINK, fontFamily: 'Inter_500Medium' },
+  idleContent:   { gap: 16 },
+  profileCard:   { gap: 12 },
+  cardTitle:     { color: 'rgba(255,255,255,0.45)', fontSize: 11, fontFamily: 'SpaceGrotesk_600SemiBold', letterSpacing: 1.8 },
+  chipWrap:      { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  chip:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 11, paddingVertical: 5, backgroundColor: 'rgba(255,45,149,0.12)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,45,149,0.25)', gap: 5 },
+  chipText:      { fontSize: 12, color: PINK, fontFamily: 'Inter_500Medium' },
 
-  findBtnWrap: {
-    borderRadius: 24, overflow: 'hidden' as const,
-    shadowColor: PINK, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 24, elevation: 10,
-  },
-  findBtn: { alignItems: 'center', padding: 28, gap: 6 },
-  findBtnText: { color: '#FFFFFF', fontSize: 22, fontFamily: 'SpaceGrotesk_700Bold' },
-  findBtnSub: { color: 'rgba(255,255,255,0.65)', fontSize: 13, fontFamily: 'Inter_400Regular' },
+  honestCard:    { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  honestEmoji:   { fontSize: 18, marginTop: 2 },
+  honestTitle:   { fontSize: 13, color: '#FFFFFF', fontFamily: 'SpaceGrotesk_600SemiBold', marginBottom: 4 },
+  honestBody:    { fontSize: 12, color: MUTED, lineHeight: 18, fontFamily: 'Inter_400Regular' },
+
+  findBtnWrap:   { borderRadius: 24, overflow: 'hidden' as const, shadowColor: PINK, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 24, elevation: 10 },
+  findBtn:       { alignItems: 'center', padding: 28, gap: 6 },
+  findBtnText:   { color: '#FFFFFF', fontSize: 22, fontFamily: 'SpaceGrotesk_700Bold' },
+  findBtnSub:    { color: 'rgba(255,255,255,0.65)', fontSize: 13, fontFamily: 'Inter_400Regular' },
 
   searchContent: { alignItems: 'center', gap: 24 },
-  searchRing: {
-    width: 136, height: 136, borderRadius: 68,
-    borderWidth: 2.5, borderColor: PINK,
-    borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center',
-  },
-  searchInner: {
-    width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,45,149,0.12)',
-  },
-  searchTitle: { color: '#FFFFFF', fontSize: 22, fontFamily: 'SpaceGrotesk_700Bold', textAlign: 'center' },
-  searchSub: { color: MUTED, fontSize: 14, textAlign: 'center', lineHeight: 20, paddingHorizontal: 20, fontFamily: 'Inter_400Regular' },
-  criteriaCard: { width: '100%', gap: 4 },
-  criteriaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
-  criteriaText: { flex: 1, fontSize: 14, color: '#FFFFFF', fontFamily: 'Inter_400Regular' },
+  searchRing:    { width: 136, height: 136, borderRadius: 68, borderWidth: 2.5, borderColor: PINK, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  searchInner:   { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,45,149,0.12)' },
+  searchTitle:   { color: '#FFFFFF', fontSize: 22, fontFamily: 'SpaceGrotesk_700Bold', textAlign: 'center' },
+  searchSub:     { color: MUTED, fontSize: 14, textAlign: 'center', lineHeight: 20, paddingHorizontal: 20, fontFamily: 'Inter_400Regular' },
+  criteriaCard:  { width: '100%', gap: 4 },
+  criteriaRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  criteriaText:  { flex: 1, fontSize: 14, color: '#FFFFFF', fontFamily: 'Inter_400Regular' },
 
-  foundContent: { alignItems: 'center', gap: 16 },
-  foundHeading: { color: '#FFFFFF', fontSize: 26, fontFamily: 'SpaceGrotesk_700Bold' },
-  matchCard: { alignItems: 'center', gap: 14, width: '100%' },
-  matchName: { fontSize: 22, color: '#FFFFFF', fontFamily: 'SpaceGrotesk_700Bold' },
-  matchChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
-  matchChip: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 11, paddingVertical: 5,
-    backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, borderWidth: 1, gap: 5,
-  },
-  matchChipText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
-  compatBar: { paddingHorizontal: 20, paddingVertical: 9, borderRadius: 20 },
-  compatText: { color: '#FFFFFF', fontSize: 14, fontFamily: 'SpaceGrotesk_700Bold' },
+  noMatchContent:{ alignItems: 'center', gap: 16 },
+  noMatchIcon:   { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
+  noMatchTitle:  { color: '#FFFFFF', fontSize: 22, fontFamily: 'SpaceGrotesk_700Bold', textAlign: 'center' },
+  noMatchSub:    { color: MUTED, fontSize: 14, textAlign: 'center', lineHeight: 21, paddingHorizontal: 10, fontFamily: 'Inter_400Regular' },
 
-  startBtnWrap: { width: '100%', borderRadius: 20, overflow: 'hidden' as const },
-  startBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 17, gap: 10 },
-  startBtnText: { color: '#FFFFFF', fontSize: 17, fontFamily: 'SpaceGrotesk_600SemiBold' },
+  optionBtnWrap: { width: '100%', borderRadius: 18, overflow: 'hidden' as const },
+  optionBtn:     { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
+  optionIcon:    { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,45,149,0.18)', flexShrink: 0 },
+  optionTitle:   { color: '#FFFFFF', fontSize: 15, fontFamily: 'SpaceGrotesk_600SemiBold', marginBottom: 3 },
+  optionSub:     { color: MUTED, fontSize: 12, fontFamily: 'Inter_400Regular' },
+  aiBadge:       { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: 'rgba(255,45,149,0.25)', borderWidth: 1, borderColor: 'rgba(255,45,149,0.40)', flexShrink: 0 },
+  aiBadgeText:   { color: PINK, fontSize: 11, fontFamily: 'SpaceGrotesk_700Bold' },
 
-  skipBtn: { paddingVertical: 8 },
-  skipText: { color: MUTED, fontSize: 14, fontFamily: 'Inter_400Regular' },
+  tryAgainBtn:   { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 },
+  tryAgainText:  { color: MUTED, fontSize: 14, fontFamily: 'Inter_400Regular' },
 });

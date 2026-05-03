@@ -1,9 +1,22 @@
 import { BlurView } from "expo-blur";
-import { Tabs } from "expo-router";
+import { Tabs, router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import FloatingBridgeButton from "@/components/FloatingBridgeButton";
+import { useApp } from "@/context/AppContext";
+
+function AuthGuard() {
+  const { user, isLoading } = useApp();
+
+  useEffect(() => {
+    if (!isLoading && (!user || !user.isOnboarded)) {
+      router.replace('/');
+    }
+  }, [user, isLoading]);
+
+  return null;
+}
 
 export default function TabLayout() {
   const isIOS = Platform.OS === "ios";
@@ -11,6 +24,7 @@ export default function TabLayout() {
 
   return (
     <View style={{ flex: 1 }}>
+      <AuthGuard />
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: '#FF2D95',

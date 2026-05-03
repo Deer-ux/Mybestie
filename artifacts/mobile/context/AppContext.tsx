@@ -36,6 +36,9 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 const STORAGE_KEY = '@mindbridge_user_v3';
 
+// All storage keys owned by this app
+const ALL_STORAGE_PREFIXES = ['@mindbridge_', '@inbox_'];
+
 function defaultUser(): UserProfile {
   const config = generateAvatarConfig();
   return {
@@ -135,19 +138,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     try {
-      await AsyncStorage.removeItem(STORAGE_KEY);
-      const inboxKeys = await AsyncStorage.getAllKeys();
-      const inboxToRemove = inboxKeys.filter(k => k.startsWith('@inbox_'));
-      if (inboxToRemove.length > 0) {
-        await AsyncStorage.multiRemove(inboxToRemove);
+      // Remove all app-owned storage keys
+      const allKeys = await AsyncStorage.getAllKeys();
+      const toRemove = allKeys.filter(k =>
+        ALL_STORAGE_PREFIXES.some(prefix => k.startsWith(prefix))
+      );
+      if (toRemove.length > 0) {
+        await AsyncStorage.multiRemove(toRemove);
       }
     } catch {
+      // Silently continue — state will still be cleared
     }
+    // Clear in-memory state; router.replace('/') is called by the caller
     setUser(null);
+    setIsLoading(false);
   }
 
   return (
-    <AppContext.Provider value={{ user, isLoading, isTeenMode, updateUser, completeOnboarding, addBadge, incrementChats, resetUser, logout }}>
+    <AppContext.Provider value={{
+      user, isLoading, isTeenMode,
+      updateUser, completeOnboarding, addBadge, incrementChats, resetUser, logout,
+    }}>
       {children}
     </AppContext.Provider>
   );
