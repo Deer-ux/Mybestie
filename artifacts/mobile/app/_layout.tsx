@@ -45,6 +45,7 @@ function RootLayoutNav() {
       <Stack.Screen name="admin" />
       <Stack.Screen name="bridge-guide" />
       <Stack.Screen name="send-message" />
+      <Stack.Screen name="analytics" />
     </Stack>
   );
 }

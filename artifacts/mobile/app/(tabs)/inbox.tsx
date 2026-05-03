@@ -12,6 +12,8 @@ import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
 import { useInbox, AnonymousMessage, MessageCategory } from '@/context/InboxContext';
 import { useColors } from '@/hooks/useColors';
+import { trackEvent } from '@/utils/analytics';
+import { useEffect } from 'react';
 import GlassCard from '@/components/GlassCard';
 import BlobBackground from '@/components/BlobBackground';
 
@@ -63,6 +65,8 @@ export default function InboxScreen() {
   const [replyText, setReplyText] = useState('');
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => { trackEvent('inbox_opened', user?.id); }, []);
+
   const slug = user?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? '';
   const shareLink = `mindbridge.app/message/${slug}`;
   const shareUrl = `https://${shareLink}`;
@@ -77,6 +81,7 @@ export default function InboxScreen() {
 
   async function handleShare() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    trackEvent('link_shared', user?.id);
     await Share.share({
       message: `Send me an anonymous message! You can say anything — I won't know it's you 👀\n\n${shareUrl}`,
       url: shareUrl,

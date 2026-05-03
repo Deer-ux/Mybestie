@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateUsername, generateAvatarConfig } from '@/utils/helpers';
+import { trackEvent } from '@/utils/analytics';
 
 export interface UserProfile {
   id: string;
@@ -78,6 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const newUser = defaultUser();
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
         setUser(newUser);
+        trackEvent('user_registered', newUser.id);
       }
     } catch {
       setUser(defaultUser());
@@ -103,6 +105,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setUser(updated);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    trackEvent('onboarding_completed', updated.id);
+    trackEvent('anonymous_link_created', updated.id);
   }
 
   async function addBadge(badgeId: string) {

@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
 import { useInbox } from '@/context/InboxContext';
 import { useColors } from '@/hooks/useColors';
+import { trackEvent } from '@/utils/analytics';
 import AvatarDisplay from '@/components/AvatarDisplay';
 import BlobBackground from '@/components/BlobBackground';
 import GlassCard from '@/components/GlassCard';
@@ -28,6 +29,7 @@ export default function HomeScreen() {
 
   async function handleFindMatch() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    trackEvent('find_match_clicked', user?.id);
     router.push('/matching');
   }
 

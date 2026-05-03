@@ -11,6 +11,7 @@ import Animated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated'
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useInbox, MessageCategory } from '@/context/InboxContext';
+import { trackEvent } from '@/utils/analytics';
 import GlassCard from '@/components/GlassCard';
 import BlobBackground from '@/components/BlobBackground';
 
@@ -38,6 +39,8 @@ export default function SendMessageScreen() {
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
+  useEffect(() => { trackEvent('link_visited'); }, []);
+
   const [step, setStep] = useState<'compose' | 'success'>('compose');
   const [category, setCategory] = useState<MessageCategory>('compliment');
   const [content, setContent] = useState('');
@@ -56,6 +59,7 @@ export default function SendMessageScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSending(true);
     await sendMessage(slug, category, content);
+    trackEvent('anonymous_message_sent');
     setSending(false);
     setStep('success');
   }
@@ -114,7 +118,7 @@ export default function SendMessageScreen() {
               </View>
 
               <TouchableOpacity
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.replace('/'); }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); trackEvent('viral_registration'); router.replace('/'); }}
                 style={[styles.viralPrimaryBtn, { borderRadius: colors.radius }]}
                 activeOpacity={0.88}
               >

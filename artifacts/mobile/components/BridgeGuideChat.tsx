@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { getBridgeResponse, getIntentLabel, getIntentEmoji, QUICK_ACTIONS, BridgeIntent } from '@/utils/bridgeGuide';
+import { trackEvent } from '@/utils/analytics';
 
 interface ChatMessage {
   id: string;
@@ -50,6 +51,7 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
     const delay = 1000 + Math.random() * 800;
     setTimeout(() => {
       const { intent, response } = getBridgeResponse(msg);
+      trackEvent('bridge_guide_question', undefined, { intent });
       const aiMsg: ChatMessage = { id: makeId(), text: response, isUser: false, intent, timestamp: new Date() };
       setMessages(prev => [...prev, aiMsg]);
       setIsTyping(false);
