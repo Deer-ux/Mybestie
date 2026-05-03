@@ -138,7 +138,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     try {
-      // Remove all app-owned storage keys
+      // Remove all app-owned storage keys (inbox messages, etc.)
       const allKeys = await AsyncStorage.getAllKeys();
       const toRemove = allKeys.filter(k =>
         ALL_STORAGE_PREFIXES.some(prefix => k.startsWith(prefix))
@@ -147,11 +147,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await AsyncStorage.multiRemove(toRemove);
       }
     } catch {
-      // Silently continue — state will still be cleared
+      // Silently continue
     }
-    // Clear in-memory state; router.replace('/') is called by the caller
-    setUser(null);
-    setIsLoading(false);
+    // Create a fresh non-onboarded user so onboarding can complete after logout
+    const fresh = defaultUser();
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
+    } catch {
+      // Silently continue
+    }
+    setUser(fresh);
   }
 
   return (

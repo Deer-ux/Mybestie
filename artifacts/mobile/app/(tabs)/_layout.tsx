@@ -11,7 +11,7 @@ function AuthGuard() {
 
   useEffect(() => {
     if (!isLoading && (!user || !user.isOnboarded)) {
-      router.replace('/');
+      router.replace('/onboarding');
     }
   }, [user, isLoading]);
 
