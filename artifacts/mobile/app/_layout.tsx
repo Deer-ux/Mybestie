@@ -24,8 +24,18 @@ import { AppProvider, useApp } from "@/context/AppContext";
 import { ChatProvider } from "@/context/ChatContext";
 import { InboxProvider } from "@/context/InboxContext";
 
-SplashScreen.preventAutoHideAsync();
-const queryClient = new QueryClient();
+// Prevent native splash screen from auto-hiding — we hide it immediately
+// so the app never shows a blank white frame.
+SplashScreen.preventAutoHideAsync().catch(() => null);
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+    },
+  },
+});
 
 function InboxWrapper({ children }: { children: ReactNode }) {
   const { user } = useApp();
@@ -52,7 +62,9 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  // Load fonts — we never block rendering on this; the app renders immediately
+  // and fonts swap in when ready (avoids blank screen / infinite loading).
+  useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -63,6 +75,7 @@ export default function RootLayout() {
     SpaceGrotesk_700Bold,
   });
 
+  // Hide the splash screen immediately on first render — do not wait for fonts.
   useEffect(() => {
     SplashScreen.hideAsync().catch(() => null);
   }, []);
