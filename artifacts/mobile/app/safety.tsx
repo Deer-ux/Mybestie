@@ -6,20 +6,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useColors } from '@/hooks/useColors';
+import GlassCard from '@/components/GlassCard';
+import BlobBackground from '@/components/BlobBackground';
 
-const SAFETY_RULES = [
-  { icon: 'person-remove-outline', title: 'Never share your real identity', desc: 'Do not share your real name, phone number, email, address, or social media.' },
-  { icon: 'location-sharp', title: 'Never share your location', desc: 'Your physical location should always remain private.' },
-  { icon: 'camera-off-outline', title: 'No photos or videos', desc: 'Do not send or request photos, videos, or any visual content.' },
-  { icon: 'card-outline', title: 'No financial transactions', desc: 'Never send money, gift cards, or financial information to anyone.' },
-  { icon: 'hand-left-outline', title: 'End chats that feel wrong', desc: 'Trust your instincts. If something feels uncomfortable, leave safely.' },
-  { icon: 'flag-outline', title: 'Report harmful behavior', desc: 'Use the report button to flag any abusive, harassing, or dangerous content.' },
+const RULES = [
+  { emoji: '🚫', title: 'Never share your real identity', desc: 'No real name, phone, email, address, or social media.' },
+  { emoji: '📍', title: 'Never share your location', desc: 'Your physical location stays private at all times.' },
+  { emoji: '📷', title: 'No photos or videos', desc: 'Do not send or request any visual content.' },
+  { emoji: '💳', title: 'No financial transactions', desc: 'Never send money or financial information to anyone.' },
+  { emoji: '🚪', title: 'End chats that feel wrong', desc: 'Trust your instincts. Leave safely anytime.' },
+  { emoji: '🚩', title: 'Report harmful behavior', desc: 'Use the report button to flag dangerous content.' },
 ];
 
-const CRISIS_CONTACTS = [
-  { icon: 'call', label: 'Emergency Services', sublabel: 'Call 911 or your local emergency number', action: 'tel:911' },
-  { icon: 'chatbubble-ellipses-outline', label: 'Crisis Text Line', sublabel: 'Text HOME to 741741 (US)', action: 'sms:741741' },
-  { icon: 'globe-outline', label: 'International Crisis Support', sublabel: 'findahelpline.com', action: 'https://findahelpline.com' },
+const CRISIS = [
+  { emoji: '🚨', label: 'Emergency Services', sublabel: 'Call 911 or your local emergency number', action: 'tel:911' },
+  { emoji: '💬', label: 'Crisis Text Line', sublabel: 'Text HOME to 741741 (US)', action: 'sms:741741' },
+  { emoji: '🌐', label: 'International Crisis Support', sublabel: 'findahelpline.com', action: 'https://findahelpline.com' },
+];
+
+const MODERATION = [
+  'Insults, harassment, and bullying',
+  'Sexual exploitation or requests',
+  'Hate speech of any kind',
+  'Scam attempts or financial requests',
+  'Requests for personal location or identity',
+  'Self-harm encouragement or glorification',
 ];
 
 export default function SafetyScreen() {
@@ -33,99 +44,91 @@ export default function SafetyScreen() {
       contentContainerStyle={{ paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >
-      <LinearGradient colors={[colors.accent, '#1A7A4A']} style={[styles.header, { paddingTop: topPad + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+      <BlobBackground variant="green" />
+      <LinearGradient colors={['#4CAF50', '#2E7D32']} style={[styles.header, { paddingTop: topPad + 16 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Ionicons name="shield-checkmark" size={36} color="#FFFFFF" />
-          <Text style={styles.headerTitle}>Safety Center</Text>
-          <Text style={styles.headerSub}>Your wellbeing is our highest priority</Text>
-        </View>
+        <Text style={[styles.headerTitle, { fontFamily: 'Poppins_700Bold' }]}>🛡️ Safety Center</Text>
+        <Text style={[styles.headerSub, { fontFamily: 'Inter_400Regular' }]}>Your wellbeing is our highest priority</Text>
       </LinearGradient>
 
       <View style={styles.content}>
-        <Animated.View entering={FadeInDown.delay(100)} style={[styles.alertCard, { backgroundColor: colors.warningLight, borderRadius: colors.radius }]}>
-          <Ionicons name="information-circle" size={20} color={colors.warning} />
-          <Text style={[styles.alertText, { color: colors.foreground }]}>
-            MindBridge is <Text style={{ fontWeight: '700' }}>not</Text> a therapy service, medical provider, or emergency crisis service. For emergencies, contact local services immediately.
-          </Text>
+        <Animated.View entering={FadeInDown.delay(100)}>
+          <View style={[styles.alertCard, { backgroundColor: colors.warningLight, borderRadius: colors.radius }]}>
+            <Text style={{ fontSize: 20 }}>⚠️</Text>
+            <Text style={[styles.alertText, { color: colors.foreground, fontFamily: 'Inter_400Regular' }]}>
+              MindBridge is <Text style={{ fontFamily: 'Inter_600SemiBold' }}>not</Text> a therapy service, medical provider, or emergency crisis service. For emergencies, contact emergency services immediately.
+            </Text>
+          </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(200)}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Safety Rules</Text>
+        <Animated.View entering={FadeInDown.delay(150)}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>Safety Rules</Text>
           <View style={styles.rulesList}>
-            {SAFETY_RULES.map((rule, i) => (
-              <View key={i} style={[styles.ruleCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-                <View style={[styles.ruleIcon, { backgroundColor: colors.greenLight }]}>
-                  <Ionicons name={rule.icon as keyof typeof Ionicons.glyphMap} size={20} color={colors.accent} />
-                </View>
+            {RULES.map((rule, i) => (
+              <GlassCard key={i} style={styles.ruleCard} padding={14}>
+                <Text style={styles.ruleEmoji}>{rule.emoji}</Text>
                 <View style={styles.ruleInfo}>
-                  <Text style={[styles.ruleTitle, { color: colors.foreground }]}>{rule.title}</Text>
-                  <Text style={[styles.ruleDesc, { color: colors.mutedForeground }]}>{rule.desc}</Text>
+                  <Text style={[styles.ruleTitle, { color: colors.foreground, fontFamily: 'Poppins_500Medium' }]}>{rule.title}</Text>
+                  <Text style={[styles.ruleDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{rule.desc}</Text>
                 </View>
-              </View>
+              </GlassCard>
             ))}
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(400)}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Crisis Support Resources</Text>
+        <Animated.View entering={FadeInDown.delay(250)}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>Crisis Support Resources</Text>
           <View style={[styles.crisisNote, { backgroundColor: '#FFF0F0', borderRadius: colors.radius }]}>
-            <Ionicons name="heart" size={16} color={colors.destructive} />
-            <Text style={[styles.crisisNoteText, { color: colors.foreground }]}>
+            <Text style={{ fontSize: 20 }}>❤️</Text>
+            <Text style={[styles.crisisNoteText, { color: colors.foreground, fontFamily: 'Inter_400Regular' }]}>
               If you or someone you know is in immediate danger, please reach out to a crisis service or emergency services right away.
             </Text>
           </View>
-          {CRISIS_CONTACTS.map((contact, i) => (
+          {CRISIS.map((contact, i) => (
             <TouchableOpacity
               key={i}
-              onPress={() => {
-                if (contact.action.startsWith('http')) {
-                  Linking.openURL(contact.action);
-                } else {
-                  Linking.openURL(contact.action);
-                }
-              }}
-              style={[styles.crisisCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}
+              onPress={() => Linking.openURL(contact.action)}
+              style={[styles.crisisCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder, borderRadius: colors.radius }]}
             >
-              <View style={[styles.crisisIcon, { backgroundColor: '#FFF0F0' }]}>
-                <Ionicons name={contact.icon as keyof typeof Ionicons.glyphMap} size={22} color={colors.destructive} />
+              <View style={[styles.crisisIconWrap, { backgroundColor: '#FFF0F0' }]}>
+                <Text style={{ fontSize: 22 }}>{contact.emoji}</Text>
               </View>
               <View style={styles.crisisInfo}>
-                <Text style={[styles.crisisLabel, { color: colors.foreground }]}>{contact.label}</Text>
-                <Text style={[styles.crisisSub, { color: colors.mutedForeground }]}>{contact.sublabel}</Text>
+                <Text style={[styles.crisisLabel, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>{contact.label}</Text>
+                <Text style={[styles.crisisSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{contact.sublabel}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
             </TouchableOpacity>
           ))}
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(600)}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Moderation Policy</Text>
-          <View style={[styles.moderationCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-            {[
-              'Insults, harassment, and bullying',
-              'Sexual exploitation or requests',
-              'Hate speech of any kind',
-              'Scam attempts or financial requests',
-              'Requests for personal location or identity',
-              'Self-harm encouragement',
-            ].map((item, i) => (
-              <View key={i} style={[styles.moderationRow, { borderBottomColor: colors.border }]}>
-                <Ionicons name="close-circle" size={16} color={colors.destructive} />
-                <Text style={[styles.moderationText, { color: colors.foreground }]}>{item}</Text>
+        <Animated.View entering={FadeInDown.delay(350)}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>Moderation Policy</Text>
+          <GlassCard>
+            <Text style={[styles.modTitle, { color: colors.foreground, fontFamily: 'Inter_500Medium' }]}>
+              The following are strictly not allowed on MindBridge:
+            </Text>
+            {MODERATION.map((item, i) => (
+              <View key={i} style={[styles.modRow, { borderBottomColor: colors.border }]}>
+                <Text style={{ fontSize: 16 }}>🚫</Text>
+                <Text style={[styles.modText, { color: colors.foreground, fontFamily: 'Inter_400Regular' }]}>{item}</Text>
               </View>
             ))}
-            <Text style={[styles.moderationNote, { color: colors.mutedForeground }]}>
-              Users who violate these rules may be muted, restricted, or permanently banned.
+            <Text style={[styles.modNote, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+              Violations result in muting, restrictions, or permanent bans.
             </Text>
-          </View>
+          </GlassCard>
         </Animated.View>
 
-        <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn2, { backgroundColor: colors.primary, borderRadius: colors.radius }]}>
-          <Text style={styles.backBtn2Text}>Back to App</Text>
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(450)}>
+          <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { borderRadius: colors.radius }]}>
+            <LinearGradient colors={['#1F6F8B', '#0B3C5D']} style={styles.backBtnGrad}>
+              <Text style={[styles.backBtnText, { fontFamily: 'Inter_600SemiBold' }]}>Back to App</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     </ScrollView>
   );
@@ -133,32 +136,36 @@ export default function SafetyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 28 },
-  backBtn: { marginBottom: 16 },
-  headerContent: { alignItems: 'center', gap: 8 },
-  headerTitle: { color: '#FFFFFF', fontSize: 26, fontWeight: '800' as const },
-  headerSub: { color: 'rgba(255,255,255,0.75)', fontSize: 14 },
+  header: { paddingHorizontal: 20, paddingBottom: 28, gap: 8 },
+  back: { marginBottom: 10 },
+  headerTitle: { color: '#FFFFFF', fontSize: 26 },
+  headerSub: { color: 'rgba(255,255,255,0.78)', fontSize: 14 },
   content: { padding: 20, gap: 20 },
   alertCard: { flexDirection: 'row', padding: 14, gap: 10, alignItems: 'flex-start' },
   alertText: { flex: 1, fontSize: 13, lineHeight: 19 },
-  sectionTitle: { fontSize: 16, fontWeight: '700' as const, marginBottom: 10 },
+  sectionTitle: { fontSize: 18, marginBottom: 12 },
   rulesList: { gap: 8 },
-  ruleCard: { flexDirection: 'row', padding: 14, borderWidth: 1, gap: 12, alignItems: 'flex-start' },
-  ruleIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  ruleCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  ruleEmoji: { fontSize: 22, width: 28, textAlign: 'center', marginTop: 2 },
   ruleInfo: { flex: 1 },
-  ruleTitle: { fontSize: 14, fontWeight: '600' as const, marginBottom: 3 },
+  ruleTitle: { fontSize: 14, marginBottom: 3 },
   ruleDesc: { fontSize: 13, lineHeight: 18 },
-  crisisNote: { flexDirection: 'row', padding: 12, gap: 8, alignItems: 'flex-start', marginBottom: 10 },
+  crisisNote: { flexDirection: 'row', padding: 12, gap: 10, alignItems: 'flex-start', marginBottom: 10 },
   crisisNoteText: { flex: 1, fontSize: 13, lineHeight: 18 },
-  crisisCard: { flexDirection: 'row', padding: 14, borderWidth: 1, gap: 12, alignItems: 'center', marginBottom: 8 },
-  crisisIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  crisisCard: {
+    flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12,
+    borderWidth: 1, marginBottom: 8,
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+  },
+  crisisIconWrap: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
   crisisInfo: { flex: 1 },
-  crisisLabel: { fontSize: 14, fontWeight: '600' as const },
+  crisisLabel: { fontSize: 14 },
   crisisSub: { fontSize: 12, marginTop: 2 },
-  moderationCard: { borderWidth: 1, padding: 16, gap: 2 },
-  moderationRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
-  moderationText: { fontSize: 13, flex: 1 },
-  moderationNote: { fontSize: 12, marginTop: 8, lineHeight: 17 },
-  backBtn2: { alignItems: 'center', paddingVertical: 14 },
-  backBtn2Text: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' as const },
+  modTitle: { fontSize: 13, lineHeight: 19, marginBottom: 10 },
+  modRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  modText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  modNote: { fontSize: 12, marginTop: 10, lineHeight: 17 },
+  backBtn: { overflow: 'hidden' as const },
+  backBtnGrad: { paddingVertical: 15, alignItems: 'center' },
+  backBtnText: { color: '#FFFFFF', fontSize: 15 },
 });

@@ -16,6 +16,7 @@ export interface Message {
   timestamp: Date;
   reaction?: string;
   isMine: boolean;
+  isBridgeGuide?: boolean;
 }
 
 export interface ChatSession {
@@ -39,12 +40,15 @@ interface ChatContextType {
   isMatching: boolean;
   safetyAlert: 'none' | 'distress' | 'crisis';
   reports: Report[];
-  startMatching: (userMood: string, userGoal: string, userInterests: string[], userPersonality: string, userId: string) => Promise<void>;
+  matchFound: SimulatedPartner | null;
+  startMatching: (userMood: string, userGoal: string, userInterests: string[], userPersonality: string, userId: string, ageGroup: string) => Promise<void>;
+  confirmMatch: () => void;
   sendMessage: (text: string) => void;
   reactToMessage: (messageId: string, reaction: string) => void;
   endChat: () => void;
   reportUser: (reason: string, partnerUsername: string) => Promise<void>;
   dismissSafetyAlert: () => void;
+  clearSession: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -52,61 +56,57 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<ChatSession | null>(null);
   const [isMatching, setIsMatching] = useState(false);
+  const [matchFound, setMatchFound] = useState<SimulatedPartner | null>(null);
   const [safetyAlert, setSafetyAlert] = useState<'none' | 'distress' | 'crisis'>('none');
   const [reports, setReports] = useState<Report[]>([]);
   const partnerMessageCount = useRef(0);
 
-  async function startMatching(userMood: string, userGoal: string, userInterests: string[], userPersonality: string, userId: string) {
+  async function startMatching(
+    userMood: string, userGoal: string, userInterests: string[],
+    userPersonality: string, _userId: string, ageGroup: string,
+  ) {
     setIsMatching(true);
+    setMatchFound(null);
     await new Promise(resolve => setTimeout(resolve, 3000));
-    const partner = generateSimulatedPartner(userMood, userGoal, userInterests, userPersonality);
-    const topic = userInterests[0] ?? 'Life';
-    const partnerOpenerId = makeId();
+    const partner = generateSimulatedPartner(userMood, userGoal, userInterests, userPersonality, ageGroup);
+    setMatchFound(partner);
+    setIsMatching(false);
+  }
 
+  function confirmMatch() {
+    if (!matchFound) return;
+    const partner = matchFound;
+    const openerId = makeId();
     const newSession: ChatSession = {
       id: makeId(),
       partner,
-      messages: [
-        {
-          id: partnerOpenerId,
-          senderId: partner.id,
-          text: getPartnerResponse(0),
-          timestamp: new Date(),
-          isMine: false,
-        },
-      ],
+      messages: [{
+        id: openerId,
+        senderId: partner.id,
+        text: getPartnerResponse(0),
+        timestamp: new Date(),
+        isMine: false,
+      }],
       startTime: new Date(),
       isActive: true,
-      topic,
+      topic: partner.interests[0] ?? 'Life',
     };
     partnerMessageCount.current = 1;
     setSession(newSession);
-    setIsMatching(false);
+    setMatchFound(null);
   }
 
   function sendMessage(text: string) {
     if (!session) return;
-
     const modResult = moderateMessage(text);
     if (modResult.blocked) return;
-
     const safetyLevel = detectSafetyLevel(text);
-    if (safetyLevel !== 'safe') {
-      setSafetyAlert(safetyLevel);
-    }
+    if (safetyLevel !== 'safe') setSafetyAlert(safetyLevel);
 
     const myMsg: Message = {
-      id: makeId(),
-      senderId: 'me',
-      text,
-      timestamp: new Date(),
-      isMine: true,
+      id: makeId(), senderId: 'me', text, timestamp: new Date(), isMine: true,
     };
-
-    setSession(prev => {
-      if (!prev) return prev;
-      return { ...prev, messages: [...prev.messages, myMsg] };
-    });
+    setSession(prev => prev ? { ...prev, messages: [...prev.messages, myMsg] } : prev);
 
     const delay = 1500 + Math.random() * 2000;
     setTimeout(() => {
@@ -118,23 +118,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         isMine: false,
       };
       partnerMessageCount.current += 1;
-      setSession(prev => {
-        if (!prev) return prev;
-        return { ...prev, messages: [...prev.messages, partnerMsg] };
-      });
+      setSession(prev => prev ? { ...prev, messages: [...prev.messages, partnerMsg] } : prev);
     }, delay);
   }
 
   function reactToMessage(messageId: string, reaction: string) {
-    setSession(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        messages: prev.messages.map(m =>
-          m.id === messageId ? { ...m, reaction } : m,
-        ),
-      };
-    });
+    setSession(prev => prev ? {
+      ...prev,
+      messages: prev.messages.map(m => m.id === messageId ? { ...m, reaction } : m),
+    } : prev);
   }
 
   function endChat() {
@@ -142,25 +134,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }
 
   async function reportUser(reason: string, partnerUsername: string) {
-    const report: Report = {
-      id: makeId(),
-      reason,
-      timestamp: new Date().toISOString(),
-      partnerUsername,
-    };
+    const report: Report = { id: makeId(), reason, timestamp: new Date().toISOString(), partnerUsername };
     const updated = [...reports, report];
     setReports(updated);
     await AsyncStorage.setItem('@mindbridge_reports', JSON.stringify(updated));
   }
 
-  function dismissSafetyAlert() {
-    setSafetyAlert('none');
-  }
+  function dismissSafetyAlert() { setSafetyAlert('none'); }
+  function clearSession() { setSession(null); setMatchFound(null); setIsMatching(false); }
 
   return (
     <ChatContext.Provider value={{
-      session, isMatching, safetyAlert, reports,
-      startMatching, sendMessage, reactToMessage, endChat, reportUser, dismissSafetyAlert,
+      session, isMatching, safetyAlert, reports, matchFound,
+      startMatching, confirmMatch, sendMessage, reactToMessage,
+      endChat, reportUser, dismissSafetyAlert, clearSession,
     }}>
       {children}
     </ChatContext.Provider>

@@ -1,181 +1,172 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import {
+  View, Text, StyleSheet, TouchableOpacity,
+  ScrollView, Platform, ActivityIndicator, Image,
+} from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useApp } from '@/context/AppContext';
 import { useColors } from '@/hooks/useColors';
+import BlobBackground from '@/components/BlobBackground';
+
+const FEATURES = [
+  { emoji: '🔒', title: 'Anonymous Identity', desc: 'No real name. No phone. Always private.' },
+  { emoji: '🧠', title: 'Smart Matching', desc: 'Matched by mood, goal, personality, and interests.' },
+  { emoji: '❤️', title: 'Emotional Support', desc: 'Safe space to share, listen, and connect.' },
+  { emoji: '✨', title: 'AI BridgeGuide', desc: 'AI assistant to guide every conversation.' },
+  { emoji: '🛡️', title: 'Teen & Adult Safety', desc: 'Separate spaces for teens and adults.' },
+  { emoji: '🤝', title: 'Emoji Reactions', desc: 'Express yourself naturally with emoji reactions.' },
+];
 
 export default function LandingScreen() {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, isLoading } = useApp();
-  const colors = useColors();
+  const topPad = Platform.OS === 'web' ? 67 : insets.top;
+  const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
   useEffect(() => {
-    if (!isLoading && user) {
-      if (user.isOnboarded) {
-        router.replace('/(tabs)/home');
-      }
+    if (!isLoading && user?.isOnboarded) {
+      router.replace('/(tabs)/home');
     }
   }, [isLoading, user]);
 
   if (isLoading) {
     return (
-      <LinearGradient colors={['#1B3A6B', '#7C5CBF']} style={styles.loadingContainer}>
-        <ActivityIndicator color="#FFFFFF" size="large" />
-      </LinearGradient>
+      <View style={[styles.loadingScreen, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
     );
   }
 
-  const topPad = Platform.OS === 'web' ? 67 : insets.top;
-
   return (
-    <LinearGradient colors={['#0D1B33', '#1B3A6B', '#2E1B5A']} style={styles.container}>
-      <View style={[styles.content, { paddingTop: topPad + 20, paddingBottom: insets.bottom + 24 }]}>
-        <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.heroSection}>
-          <View style={styles.logoRing}>
-            <LinearGradient colors={['#4A90D9', '#9B7FD4']} style={styles.logoGradient}>
-              <Ionicons name="infinite" size={40} color="#FFFFFF" />
-            </LinearGradient>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <BlobBackground />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: topPad + 24, paddingBottom: botPad + 40, paddingHorizontal: 24, gap: 32 }}
+      >
+        <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.heroSection}>
+          <View style={[styles.logoPill, { backgroundColor: colors.lavenderLight }]}>
+            <Text style={styles.logoPillText}>✨ Anonymous • Safe • Meaningful</Text>
           </View>
-          <Text style={styles.appName}>MindBridge</Text>
-          <Text style={styles.tagline}>Anonymous. Safe. Meaningful.</Text>
+          <Text style={[styles.appName, { color: colors.primary, fontFamily: 'Poppins_700Bold' }]}>
+            MindBridge
+          </Text>
+          <Text style={[styles.tagline, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>
+            {"Anonymous conversations.\nReal support. Safer connections."}
+          </Text>
+          <Text style={[styles.desc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            MindBridge connects people anonymously through mood, interests, personality, and temperament — in a safe, moderated space.
+          </Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(400).springify()} style={styles.featuresSection}>
-          {[
-            { icon: 'shield-checkmark-outline', text: 'Fully anonymous — no real name needed' },
-            { icon: 'people-outline', text: 'Smart matching based on your mood & interests' },
-            { icon: 'chatbubbles-outline', text: 'Real conversations, real human connection' },
-            { icon: 'heart-outline', text: 'BridgeGuide AI keeps conversations safe & kind' },
-          ].map((feature, i) => (
-            <View key={i} style={styles.featureRow}>
-              <View style={styles.featureIconWrap}>
-                <Ionicons name={feature.icon as keyof typeof Ionicons.glyphMap} size={18} color="#9B7FD4" />
-              </View>
-              <Text style={styles.featureText}>{feature.text}</Text>
-            </View>
-          ))}
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(600).springify()} style={styles.ctaSection}>
-          <TouchableOpacity
-            style={styles.ctaButton}
-            onPress={() => router.push('/onboarding')}
-            activeOpacity={0.85}
+        <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.heroImageWrap}>
+          <LinearGradient
+            colors={['rgba(162,155,254,0.15)', 'rgba(31,111,139,0.10)']}
+            style={styles.heroImageCard}
           >
-            <LinearGradient colors={['#4A90D9', '#7C5CBF']} style={styles.ctaGradient}>
-              <Text style={styles.ctaText}>{"Get Started — It's Free"}</Text>
-              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+            <Text style={styles.heroEmojis}>{"🌍  👥  💬  ❤️  🤝  ✨"}</Text>
+            <Text style={[styles.heroQuote, { color: colors.primary, fontFamily: 'Poppins_500Medium' }]}>
+              {"\"Real conversations,\nreal human connection.\""}
+            </Text>
+          </LinearGradient>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.ctaRow}>
+          <TouchableOpacity
+            onPress={() => router.push('/onboarding')}
+            style={[styles.primaryBtn, { borderRadius: colors.radius }]}
+            activeOpacity={0.88}
+          >
+            <LinearGradient colors={['#1F6F8B', '#0B3C5D']} style={styles.primaryBtnGrad}>
+              <Text style={[styles.primaryBtnText, { fontFamily: 'Inter_600SemiBold' }]}>Start Anonymously</Text>
             </LinearGradient>
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/safety')}
+            style={[styles.secondaryBtn, { borderRadius: colors.radius, borderColor: colors.border }]}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.secondaryBtnText, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
+              Learn How It Works
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
 
-          <View style={[styles.disclaimerBox, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
-            <Ionicons name="information-circle-outline" size={14} color="rgba(255,255,255,0.5)" />
-            <Text style={styles.disclaimerText}>
-              Not a therapy service or emergency crisis service. For emergencies, call your local services.
+        <Animated.View entering={FadeInDown.delay(400).springify()}>
+          <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>
+            Why MindBridge?
+          </Text>
+          <View style={styles.featureGrid}>
+            {FEATURES.map((f, i) => (
+              <View
+                key={i}
+                style={[styles.featureCard, {
+                  backgroundColor: colors.glass,
+                  borderColor: colors.glassBorder,
+                  borderRadius: colors.radius,
+                  shadowColor: colors.primary,
+                }]}
+              >
+                <Text style={styles.featureEmoji}>{f.emoji}</Text>
+                <Text style={[styles.featureTitle, { color: colors.foreground, fontFamily: 'Poppins_500Medium' }]}>{f.title}</Text>
+                <Text style={[styles.featureDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{f.desc}</Text>
+              </View>
+            ))}
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInUp.delay(500).springify()}>
+          <View style={[styles.disclaimerCard, { backgroundColor: colors.warningLight, borderRadius: colors.radius }]}>
+            <Text style={{ fontSize: 16 }}>⚠️</Text>
+            <Text style={[styles.disclaimerText, { color: colors.foreground, fontFamily: 'Inter_400Regular' }]}>
+              MindBridge is not a therapy service or emergency crisis service. If you are in immediate danger, contact emergency services or someone you trust.
             </Text>
           </View>
         </Animated.View>
-      </View>
-    </LinearGradient>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: 'space-between',
+  loadingScreen: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  heroSection: { gap: 12, alignItems: 'flex-start' },
+  logoPill: {
+    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, alignSelf: 'flex-start',
   },
-  heroSection: {
-    alignItems: 'center',
-    paddingTop: 20,
+  logoPillText: { color: '#6C63FF', fontSize: 12, fontWeight: '600' as const },
+  appName: { fontSize: 44, letterSpacing: -1 },
+  tagline: { fontSize: 22, lineHeight: 32, color: '#1F2937' },
+  desc: { fontSize: 15, lineHeight: 22, color: '#6B7280' },
+  heroImageWrap: { borderRadius: 24, overflow: 'hidden' as const },
+  heroImageCard: {
+    padding: 32, alignItems: 'center', justifyContent: 'center', gap: 16, borderRadius: 24,
   },
-  logoRing: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.2)',
-    padding: 4,
-    marginBottom: 20,
+  heroEmojis: { fontSize: 28, letterSpacing: 4 },
+  heroQuote: { fontSize: 18, textAlign: 'center', lineHeight: 27 },
+  ctaRow: { gap: 12 },
+  primaryBtn: { overflow: 'hidden' as const },
+  primaryBtnGrad: { paddingVertical: 17, alignItems: 'center', justifyContent: 'center' },
+  primaryBtnText: { color: '#FFFFFF', fontSize: 16 },
+  secondaryBtn: {
+    paddingVertical: 15, alignItems: 'center', borderWidth: 1.5,
   },
-  logoGradient: {
-    flex: 1,
-    borderRadius: 41,
-    alignItems: 'center',
-    justifyContent: 'center',
+  secondaryBtnText: { fontSize: 16 },
+  sectionLabel: { fontSize: 18, marginBottom: 14 },
+  featureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  featureCard: {
+    width: '47%', flexGrow: 1, padding: 16, gap: 8,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3,
   },
-  appName: {
-    fontSize: 38,
-    fontWeight: '800' as const,
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
-    marginBottom: 8,
-  },
-  tagline: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.65)',
-    letterSpacing: 0.5,
-  },
-  featuresSection: {
-    gap: 14,
-    paddingVertical: 20,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  featureIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(155,127,212,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  featureText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 15,
-    flex: 1,
-    lineHeight: 20,
-  },
-  ctaSection: {
-    gap: 16,
-  },
-  ctaButton: {
-    borderRadius: 16,
-    overflow: 'hidden' as const,
-  },
-  ctaGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 10,
-  },
-  ctaText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700' as const,
-  },
-  disclaimerBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    padding: 12,
-    borderRadius: 12,
-  },
-  disclaimerText: {
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: 12,
-    flex: 1,
-    lineHeight: 17,
-  },
+  featureEmoji: { fontSize: 26 },
+  featureTitle: { fontSize: 14 },
+  featureDesc: { fontSize: 12, lineHeight: 17 },
+  disclaimerCard: { flexDirection: 'row', padding: 14, gap: 10, alignItems: 'flex-start' },
+  disclaimerText: { flex: 1, fontSize: 13, lineHeight: 19 },
 });

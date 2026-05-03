@@ -2,31 +2,26 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
 import { useColors } from '@/hooks/useColors';
-
-const RATING_LABELS = ['', 'Not helpful', 'Somewhat helpful', 'Neutral', 'Helpful', 'Very helpful'];
+import GlassCard from '@/components/GlassCard';
+import BlobBackground from '@/components/BlobBackground';
 
 export default function FeedbackScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { addBadge } = useApp();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
+  const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
   const [helpful, setHelpful] = useState(0);
   const [respectful, setRespectful] = useState(0);
   const [wouldMatch, setWouldMatch] = useState<null | boolean>(null);
   const [note, setNote] = useState('');
   const [submitted, setSubmitted] = useState(false);
-
-  function select(setter: (v: number) => void, val: number) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setter(val);
-  }
 
   async function handleSubmit() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -36,151 +31,160 @@ export default function FeedbackScreen() {
 
   if (submitted) {
     return (
-      <LinearGradient colors={[colors.primary, colors.purple]} style={styles.container}>
-        <View style={[styles.thankYouContent, { paddingTop: topPad + 40 }]}>
-          <Animated.View entering={FadeInDown.springify()} style={styles.thankYouCard}>
-            <View style={[styles.checkCircle, { backgroundColor: colors.accent }]}>
-              <Ionicons name="checkmark" size={36} color="#FFFFFF" />
-            </View>
-            <Text style={[styles.thankTitle, { color: colors.foreground }]}>Thank You!</Text>
-            <Text style={[styles.thankSub, { color: colors.mutedForeground }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <BlobBackground variant="green" />
+        <View style={[styles.thankYou, { paddingTop: topPad + 60 }]}>
+          <Animated.View entering={FadeInDown.springify()} style={styles.thankContent}>
+            <Text style={styles.thankEmoji}>🎉</Text>
+            <Text style={[styles.thankTitle, { color: colors.primary, fontFamily: 'Poppins_700Bold' }]}>Thank You!</Text>
+            <Text style={[styles.thankSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
               Your feedback helps MindBridge become a safer and more meaningful platform for everyone.
             </Text>
             <TouchableOpacity
               onPress={() => router.replace('/(tabs)/home')}
-              style={[styles.doneBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
+              style={[styles.doneBtn, { borderRadius: colors.radius }]}
             >
-              <Text style={styles.doneBtnText}>Back to Home</Text>
+              <LinearGradient colors={['#1F6F8B', '#0B3C5D']} style={styles.doneBtnGrad}>
+                <Text style={[styles.doneBtnText, { fontFamily: 'Inter_600SemiBold' }]}>Back to Home 🏠</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
         </View>
-      </LinearGradient>
+      </View>
     );
   }
 
   return (
-    <LinearGradient colors={[colors.primary, colors.purple]} style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <BlobBackground />
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: topPad + 20, paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={{ paddingTop: topPad + 24, paddingBottom: botPad + 40, paddingHorizontal: 20, gap: 16 }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.delay(100)}>
-          <Text style={styles.title}>How was your conversation?</Text>
-          <Text style={styles.subtitle}>Your feedback is anonymous and helps improve matches.</Text>
+          <Text style={[styles.title, { color: colors.primary, fontFamily: 'Poppins_700Bold' }]}>
+            How was your conversation?
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            Your feedback is anonymous and helps improve matches.
+          </Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(200)} style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Was this conversation helpful?</Text>
-          <View style={styles.starsRow}>
-            {[1, 2, 3, 4, 5].map(v => (
-              <TouchableOpacity key={v} onPress={() => select(setHelpful, v)}>
-                <Ionicons name={v <= helpful ? 'star' : 'star-outline'} size={32} color={v <= helpful ? '#F39C12' : colors.border} />
-              </TouchableOpacity>
-            ))}
-          </View>
-          {helpful > 0 && <Text style={[styles.ratingLabel, { color: colors.mutedForeground }]}>{RATING_LABELS[helpful]}</Text>}
+        <Animated.View entering={FadeInDown.delay(150)}>
+          <GlassCard style={styles.ratingCard}>
+            <Text style={[styles.ratingTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>
+              Was this conversation helpful?
+            </Text>
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map(v => (
+                <TouchableOpacity key={v} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setHelpful(v); }}>
+                  <Text style={[styles.star, { opacity: v <= helpful ? 1 : 0.3 }]}>⭐</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </GlassCard>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(300)} style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Was the other person respectful?</Text>
-          <View style={styles.starsRow}>
-            {[1, 2, 3, 4, 5].map(v => (
-              <TouchableOpacity key={v} onPress={() => select(setRespectful, v)}>
-                <Ionicons name={v <= respectful ? 'heart' : 'heart-outline'} size={30} color={v <= respectful ? '#E74C3C' : colors.border} />
-              </TouchableOpacity>
-            ))}
-          </View>
+        <Animated.View entering={FadeInDown.delay(200)}>
+          <GlassCard style={styles.ratingCard}>
+            <Text style={[styles.ratingTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>
+              Was the other person respectful?
+            </Text>
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map(v => (
+                <TouchableOpacity key={v} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRespectful(v); }}>
+                  <Text style={[styles.star, { opacity: v <= respectful ? 1 : 0.3 }]}>❤️</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </GlassCard>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(400)} style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Would you like to match with this person again?</Text>
-          <View style={styles.yesNoRow}>
-            <TouchableOpacity
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setWouldMatch(true); }}
-              style={[styles.yesNoBtn, {
-                backgroundColor: wouldMatch === true ? colors.greenLight : colors.muted,
-                borderColor: wouldMatch === true ? colors.accent : colors.border,
-                borderRadius: colors.radius,
-              }]}
-            >
-              <Ionicons name="thumbs-up-outline" size={22} color={wouldMatch === true ? colors.accent : colors.mutedForeground} />
-              <Text style={[styles.yesNoText, { color: wouldMatch === true ? colors.accent : colors.mutedForeground }]}>Yes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setWouldMatch(false); }}
-              style={[styles.yesNoBtn, {
-                backgroundColor: wouldMatch === false ? '#FFF0F0' : colors.muted,
-                borderColor: wouldMatch === false ? colors.destructive : colors.border,
-                borderRadius: colors.radius,
-              }]}
-            >
-              <Ionicons name="thumbs-down-outline" size={22} color={wouldMatch === false ? colors.destructive : colors.mutedForeground} />
-              <Text style={[styles.yesNoText, { color: wouldMatch === false ? colors.destructive : colors.mutedForeground }]}>No</Text>
-            </TouchableOpacity>
-          </View>
+        <Animated.View entering={FadeInDown.delay(250)}>
+          <GlassCard style={styles.yesnoCard}>
+            <Text style={[styles.ratingTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>
+              Would you match with this person again?
+            </Text>
+            <View style={styles.yesnoRow}>
+              {[{ value: true, label: '👍 Yes', bg: colors.safeGreenLight, text: colors.safeGreen }, { value: false, label: '👎 No', bg: '#FFF0F0', text: colors.destructive }].map(btn => (
+                <TouchableOpacity
+                  key={String(btn.value)}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setWouldMatch(btn.value); }}
+                  style={[styles.yesnoBtn, {
+                    backgroundColor: wouldMatch === btn.value ? btn.bg : colors.muted,
+                    borderColor: wouldMatch === btn.value ? btn.text : colors.border,
+                    borderRadius: colors.radius,
+                  }]}
+                >
+                  <Text style={[styles.yesnoBtnText, { color: wouldMatch === btn.value ? btn.text : colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>{btn.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </GlassCard>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(500)} style={[styles.card, { backgroundColor: colors.card, borderRadius: colors.radius }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Any additional thoughts? (Optional)</Text>
-          <TextInput
-            style={[styles.noteInput, { color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius - 4 }]}
-            value={note}
-            onChangeText={setNote}
-            placeholder="Share your reflection..."
-            placeholderTextColor={colors.mutedForeground}
-            multiline
-            numberOfLines={4}
-            maxLength={300}
-          />
+        <Animated.View entering={FadeInDown.delay(300)}>
+          <GlassCard>
+            <Text style={[styles.ratingTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>
+              Any additional thoughts? (Optional)
+            </Text>
+            <TextInput
+              style={[styles.noteInput, { color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius - 6, fontFamily: 'Inter_400Regular' }]}
+              value={note}
+              onChangeText={setNote}
+              placeholder="Share your reflection... 💭"
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              numberOfLines={4}
+              maxLength={300}
+            />
+          </GlassCard>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(600)}>
+        <Animated.View entering={FadeInDown.delay(350)} style={styles.actions}>
           <TouchableOpacity
             onPress={handleSubmit}
-            style={[styles.submitBtn, { backgroundColor: '#FFFFFF', borderRadius: colors.radius }]}
             disabled={helpful === 0 || respectful === 0}
+            style={[styles.submitBtn, { borderRadius: colors.radius, opacity: helpful > 0 && respectful > 0 ? 1 : 0.4 }]}
           >
-            <Text style={[styles.submitText, { color: colors.primary }]}>Submit Feedback</Text>
-            <Ionicons name="checkmark-circle-outline" size={20} color={colors.primary} />
+            <LinearGradient colors={['#1F6F8B', '#0B3C5D']} style={styles.submitGrad}>
+              <Text style={[styles.submitText, { fontFamily: 'Inter_600SemiBold' }]}>✅  Submit Feedback</Text>
+            </LinearGradient>
           </TouchableOpacity>
-
           <TouchableOpacity onPress={() => router.replace('/(tabs)/home')} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Skip for now</Text>
+            <Text style={[styles.skipText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>Skip for now</Text>
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, gap: 16 },
-  title: { color: '#FFFFFF', fontSize: 26, fontWeight: '800' as const, marginBottom: 8 },
-  subtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 20, marginBottom: 8 },
-  card: { padding: 20, gap: 14 },
-  cardTitle: { fontSize: 15, fontWeight: '600' as const, lineHeight: 21 },
-  starsRow: { flexDirection: 'row', gap: 8 },
-  ratingLabel: { fontSize: 13, textAlign: 'center', marginTop: -4 },
-  yesNoRow: { flexDirection: 'row', gap: 12 },
-  yesNoBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 14, gap: 8, borderWidth: 1.5,
-  },
-  yesNoText: { fontSize: 15, fontWeight: '600' as const },
-  noteInput: { borderWidth: 1, padding: 12, minHeight: 80, textAlignVertical: 'top', fontSize: 14 },
-  submitBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 16, gap: 8,
-  },
-  submitText: { fontSize: 16, fontWeight: '700' as const },
-  skipBtn: { alignItems: 'center', paddingVertical: 12 },
-  skipText: { color: 'rgba(255,255,255,0.55)', fontSize: 14 },
-  thankYouContent: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
-  thankYouCard: { alignItems: 'center', gap: 16 },
-  checkCircle: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
-  thankTitle: { fontSize: 28, fontWeight: '800' as const },
+  thankYou: { flex: 1, alignItems: 'center', paddingHorizontal: 24 },
+  thankContent: { alignItems: 'center', gap: 16 },
+  thankEmoji: { fontSize: 60 },
+  thankTitle: { fontSize: 30 },
   thankSub: { fontSize: 15, textAlign: 'center', lineHeight: 22 },
-  doneBtn: { marginTop: 8, paddingHorizontal: 32, paddingVertical: 14 },
-  doneBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' as const },
+  doneBtn: { marginTop: 8, overflow: 'hidden' as const, width: '100%' },
+  doneBtnGrad: { paddingVertical: 16, alignItems: 'center' },
+  doneBtnText: { color: '#FFFFFF', fontSize: 16 },
+  title: { fontSize: 26, marginBottom: 6 },
+  subtitle: { fontSize: 14, lineHeight: 20 },
+  ratingCard: { gap: 14 },
+  yesnoCard: { gap: 14 },
+  ratingTitle: { fontSize: 15, lineHeight: 22 },
+  starsRow: { flexDirection: 'row', gap: 10 },
+  star: { fontSize: 30 },
+  yesnoRow: { flexDirection: 'row', gap: 12 },
+  yesnoBtn: { flex: 1, alignItems: 'center', paddingVertical: 14, borderWidth: 1.5 },
+  yesnoBtnText: { fontSize: 16 },
+  noteInput: { borderWidth: 1, padding: 12, minHeight: 80, textAlignVertical: 'top', fontSize: 14, marginTop: 8 },
+  actions: { gap: 10 },
+  submitBtn: { overflow: 'hidden' as const },
+  submitGrad: { paddingVertical: 16, alignItems: 'center' },
+  submitText: { color: '#FFFFFF', fontSize: 16 },
+  skipBtn: { alignItems: 'center', paddingVertical: 8 },
+  skipText: { fontSize: 14 },
 });

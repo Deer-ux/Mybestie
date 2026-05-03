@@ -7,6 +7,7 @@ export interface UserProfile {
   username: string;
   iconIndex: number;
   colorIndex: number;
+  ageGroup: string;
   mood: string;
   goal: string;
   interests: string[];
@@ -22,6 +23,7 @@ export interface UserProfile {
 interface AppContextType {
   user: UserProfile | null;
   isLoading: boolean;
+  isTeenMode: boolean;
   updateUser: (updates: Partial<UserProfile>) => Promise<void>;
   completeOnboarding: (profile: Partial<UserProfile>) => Promise<void>;
   addBadge: (badgeId: string) => Promise<void>;
@@ -30,16 +32,16 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+const STORAGE_KEY = '@mindbridge_user_v3';
 
-const STORAGE_KEY = '@mindbridge_user';
-
-const defaultUser = (): UserProfile => {
+function defaultUser(): UserProfile {
   const config = generateAvatarConfig();
   return {
-    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    id: makeId(),
     username: generateUsername(),
     iconIndex: config.iconIndex,
     colorIndex: config.colorIndex,
+    ageGroup: '',
     mood: '',
     goal: '',
     interests: [],
@@ -51,11 +53,17 @@ const defaultUser = (): UserProfile => {
     isOnboarded: false,
     isAdmin: false,
   };
-};
+}
+
+function makeId() {
+  return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const isTeenMode = user?.ageGroup === 'teen';
 
   useEffect(() => {
     loadUser();
@@ -98,8 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   async function addBadge(badgeId: string) {
-    if (!user) return;
-    if (user.badges.includes(badgeId)) return;
+    if (!user || user.badges.includes(badgeId)) return;
     const updated = { ...user, badges: [...user.badges, badgeId] };
     setUser(updated);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -107,11 +114,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function incrementChats() {
     if (!user) return;
-    const updated = {
-      ...user,
-      totalChats: user.totalChats + 1,
-      positiveStreak: user.positiveStreak + 1,
-    };
+    const updated = { ...user, totalChats: user.totalChats + 1, positiveStreak: user.positiveStreak + 1 };
     setUser(updated);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     if (updated.totalChats === 1) await addBadge('first_connection');
@@ -126,7 +129,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppContext.Provider value={{ user, isLoading, updateUser, completeOnboarding, addBadge, incrementChats, resetUser }}>
+    <AppContext.Provider value={{ user, isLoading, isTeenMode, updateUser, completeOnboarding, addBadge, incrementChats, resetUser }}>
       {children}
     </AppContext.Provider>
   );

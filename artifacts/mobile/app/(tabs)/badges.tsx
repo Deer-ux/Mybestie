@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useApp } from '@/context/AppContext';
 import { useColors } from '@/hooks/useColors';
+import GlassCard from '@/components/GlassCard';
+import BlobBackground from '@/components/BlobBackground';
 import { BADGES } from '@/utils/helpers';
 
 export default function BadgesScreen() {
@@ -13,7 +14,6 @@ export default function BadgesScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useApp();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
-
   const earned = BADGES.filter(b => user?.badges.includes(b.id));
   const locked = BADGES.filter(b => !user?.badges.includes(b.id));
 
@@ -23,11 +23,11 @@ export default function BadgesScreen() {
       contentContainerStyle={{ paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
     >
-      <LinearGradient colors={[colors.purple, colors.primary]} style={[styles.header, { paddingTop: topPad + 20 }]}>
-        <Text style={styles.headerTitle}>Achievements</Text>
-        <Text style={styles.headerSub}>{earned.length} of {BADGES.length} badges earned</Text>
-
-        <View style={[styles.progressOuter, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+      <BlobBackground variant="purple" />
+      <LinearGradient colors={['#6C63FF', '#A29BFE']} style={[styles.header, { paddingTop: topPad + 24 }]}>
+        <Text style={[styles.headerTitle, { fontFamily: 'Poppins_700Bold' }]}>Achievements 🌟</Text>
+        <Text style={[styles.headerSub, { fontFamily: 'Inter_400Regular' }]}>{earned.length} of {BADGES.length} badges earned</Text>
+        <View style={[styles.progressOuter, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
           <View style={[styles.progressInner, { width: `${(earned.length / BADGES.length) * 100}%` as any }]} />
         </View>
       </LinearGradient>
@@ -35,47 +35,51 @@ export default function BadgesScreen() {
       <View style={styles.content}>
         {earned.length > 0 && (
           <>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>EARNED</Text>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>EARNED</Text>
             {earned.map((badge, i) => (
               <Animated.View key={badge.id} entering={FadeInDown.delay(i * 80).springify()}>
-                <View style={[styles.badgeCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-                  <View style={[styles.badgeIconWrap, { backgroundColor: badge.color + '20' }]}>
-                    <Ionicons name={badge.icon as keyof typeof Ionicons.glyphMap} size={28} color={badge.color} />
+                <GlassCard style={styles.badgeCard} padding={16}>
+                  <View style={[styles.badgeEmoji, { backgroundColor: badge.color + '18' }]}>
+                    <Text style={styles.emojiText}>{badge.emoji}</Text>
                   </View>
                   <View style={styles.badgeInfo}>
-                    <Text style={[styles.badgeName, { color: colors.foreground }]}>{badge.label}</Text>
-                    <Text style={[styles.badgeDesc, { color: colors.mutedForeground }]}>{badge.description}</Text>
+                    <Text style={[styles.badgeName, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>{badge.label}</Text>
+                    <Text style={[styles.badgeDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{badge.description}</Text>
                   </View>
-                  <Ionicons name="checkmark-circle" size={22} color={colors.accent} />
+                  <Text style={styles.earnedCheck}>✅</Text>
+                </GlassCard>
+              </Animated.View>
+            ))}
+          </>
+        )}
+
+        {locked.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold', marginTop: earned.length > 0 ? 8 : 0 }]}>
+              LOCKED 🔒
+            </Text>
+            {locked.map((badge, i) => (
+              <Animated.View key={badge.id} entering={FadeInDown.delay(i * 60).springify()}>
+                <View style={[styles.lockedCard, { backgroundColor: colors.muted, borderRadius: colors.radius }]}>
+                  <View style={[styles.badgeEmoji, { backgroundColor: colors.border }]}>
+                    <Text style={[styles.emojiText, { opacity: 0.35 }]}>{badge.emoji}</Text>
+                  </View>
+                  <View style={styles.badgeInfo}>
+                    <Text style={[styles.badgeName, { color: colors.mutedForeground, fontFamily: 'Poppins_600SemiBold', opacity: 0.7 }]}>{badge.label}</Text>
+                    <Text style={[styles.badgeDesc, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular', opacity: 0.6 }]}>{badge.description}</Text>
+                  </View>
                 </View>
               </Animated.View>
             ))}
           </>
         )}
 
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: earned.length > 0 ? 8 : 0 }]}>
-          {locked.length > 0 ? 'LOCKED' : 'ALL BADGES EARNED!'}
-        </Text>
-        {locked.map((badge, i) => (
-          <Animated.View key={badge.id} entering={FadeInDown.delay(i * 80).springify()}>
-            <View style={[styles.badgeCard, styles.lockedCard, { backgroundColor: colors.muted, borderColor: colors.border, borderRadius: colors.radius }]}>
-              <View style={[styles.badgeIconWrap, { backgroundColor: colors.border }]}>
-                <Ionicons name="lock-closed-outline" size={24} color={colors.mutedForeground} />
-              </View>
-              <View style={styles.badgeInfo}>
-                <Text style={[styles.badgeName, { color: colors.mutedForeground }]}>{badge.label}</Text>
-                <Text style={[styles.badgeDesc, { color: colors.mutedForeground, opacity: 0.7 }]}>{badge.description}</Text>
-              </View>
-            </View>
-          </Animated.View>
-        ))}
-
-        <View style={[styles.infoCard, { backgroundColor: colors.purpleLight, borderRadius: colors.radius }]}>
-          <Ionicons name="ribbon-outline" size={20} color={colors.purple} />
-          <Text style={[styles.infoText, { color: colors.purple }]}>
-            Badges are awarded for kindness, learning, and meaningful conversations — never for sharing pain.
+        <GlassCard style={styles.infoCard} padding={14}>
+          <Text style={{ fontSize: 20 }}>🌱</Text>
+          <Text style={[styles.infoText, { color: colors.accent, fontFamily: 'Inter_500Medium' }]}>
+            Badges are earned for kindness, growth, and meaningful conversations — never for sharing pain.
           </Text>
-        </View>
+        </GlassCard>
       </View>
     </ScrollView>
   );
@@ -83,22 +87,21 @@ export default function BadgesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 28 },
-  headerTitle: { color: '#FFFFFF', fontSize: 26, fontWeight: '800' as const, marginBottom: 4 },
-  headerSub: { color: 'rgba(255,255,255,0.7)', fontSize: 14, marginBottom: 16 },
-  progressOuter: { height: 6, borderRadius: 3, overflow: 'hidden' as const },
+  header: { paddingHorizontal: 24, paddingBottom: 28, gap: 6 },
+  headerTitle: { color: '#FFFFFF', fontSize: 28 },
+  headerSub: { color: 'rgba(255,255,255,0.75)', fontSize: 14 },
+  progressOuter: { height: 6, borderRadius: 3, marginTop: 4, overflow: 'hidden' as const },
   progressInner: { height: 6, backgroundColor: '#FFFFFF', borderRadius: 3 },
   content: { padding: 20, gap: 10 },
-  sectionLabel: { fontSize: 11, fontWeight: '700' as const, letterSpacing: 0.8, marginBottom: 4 },
-  badgeCard: {
-    flexDirection: 'row', alignItems: 'center', padding: 14,
-    borderWidth: 1, gap: 14,
-  },
-  lockedCard: { opacity: 0.6 },
-  badgeIconWrap: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginBottom: 4 },
+  badgeCard: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  lockedCard: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14, marginBottom: 0 },
+  badgeEmoji: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  emojiText: { fontSize: 26 },
   badgeInfo: { flex: 1 },
-  badgeName: { fontSize: 15, fontWeight: '600' as const, marginBottom: 3 },
+  badgeName: { fontSize: 15, marginBottom: 3 },
   badgeDesc: { fontSize: 12, lineHeight: 17 },
-  infoCard: { flexDirection: 'row', padding: 14, gap: 10, alignItems: 'flex-start', marginTop: 8 },
-  infoText: { flex: 1, fontSize: 13, lineHeight: 18, fontWeight: '500' as const },
+  earnedCheck: { fontSize: 20 },
+  infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 8 },
+  infoText: { flex: 1, fontSize: 13, lineHeight: 19 },
 });

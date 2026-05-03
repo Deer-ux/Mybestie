@@ -6,3 +6,21 @@ id = "Df0EBqff0vtDU3Njtj0DG"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "kHBtXZH2LG_4HIeUZPOix"
+uri = "file://artifacts/mobile/assets/images/hero.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "5xu04Vg4q_yIbNOS3Ar5N"
+uri = "file://artifacts/mobile/assets/images/safety_hero.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "HXuVLNFpSxA-XbnxEM-I9"
+uri = "file://artifacts/mobile/assets/images/bridge_guide.png"
+type = "image"
+title = "generated_image"

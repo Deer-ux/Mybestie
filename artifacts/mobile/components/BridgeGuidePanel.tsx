@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { getBridgeSuggestion } from '@/utils/helpers';
@@ -11,11 +12,11 @@ interface BridgeGuidePanelProps {
   messageCount: number;
 }
 
-const TIPS = [
-  { icon: 'shield-checkmark-outline', text: 'Never share your real name, phone number, or location.' },
-  { icon: 'heart-outline', text: 'Be kind. Everyone here is looking for connection.' },
-  { icon: 'ear-outline', text: 'Listen actively — sometimes people just need to feel heard.' },
-  { icon: 'hand-left-outline', text: 'If uncomfortable, you can always end the chat safely.' },
+const SAFETY_TIPS = [
+  { emoji: '🔒', text: 'Never share your real name, phone, or location.' },
+  { emoji: '❤️', text: 'Be kind — everyone here is looking for connection.' },
+  { emoji: '👂', text: 'Listen actively. Sometimes people just need to feel heard.' },
+  { emoji: '🚪', text: 'If uncomfortable, you can always end the chat safely.' },
 ];
 
 export default function BridgeGuidePanel({ onUseSuggestion, isVisible, onClose, messageCount }: BridgeGuidePanelProps) {
@@ -29,37 +30,39 @@ export default function BridgeGuidePanel({ onUseSuggestion, isVisible, onClose, 
   if (!isVisible) return null;
 
   return (
-    <View style={[styles.panel, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.panelHeader}>
-        <View style={styles.panelTitleRow}>
-          <View style={[styles.aiDot, { backgroundColor: colors.accent }]} />
-          <Text style={[styles.panelTitle, { color: colors.foreground }]}>BridgeGuide</Text>
-          <Text style={[styles.aiLabel, { color: colors.accent, backgroundColor: colors.greenLight }]}>AI</Text>
-        </View>
+    <View style={[styles.panel, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+      <View style={styles.header}>
+        <LinearGradient colors={['#6C63FF', '#A29BFE']} style={styles.aiPill}>
+          <Text style={styles.aiPillText}>✨ BridgeGuide AI</Text>
+        </LinearGradient>
         <TouchableOpacity onPress={onClose}>
-          <Ionicons name="close" size={22} color={colors.mutedForeground} />
+          <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CONVERSATION STARTERS</Text>
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll} contentContainerStyle={{ paddingBottom: 8 }}>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>
+          CONVERSATION STARTERS
+        </Text>
         {suggestions.map((s, i) => (
           <TouchableOpacity
             key={i}
-            style={[styles.suggestionCard, { backgroundColor: colors.blueLight, borderRadius: colors.radius }]}
-            onPress={() => onUseSuggestion(s.replace(/^[^:]+:\s*'?/, '').replace(/'?\s*$/, ''))}
+            onPress={() => onUseSuggestion(s.replace(/^[^:'"]+[:']\s*'?/, '').replace(/'?\s*$/, ''))}
+            style={[styles.suggCard, { backgroundColor: colors.lavenderLight, borderRadius: colors.radius - 4 }]}
             activeOpacity={0.75}
           >
-            <Ionicons name="chatbubble-outline" size={16} color={colors.primary} />
-            <Text style={[styles.suggestionText, { color: colors.primary }]}>{s}</Text>
+            <Text style={{ fontSize: 16 }}>💬</Text>
+            <Text style={[styles.suggText, { color: colors.accent, fontFamily: 'Inter_500Medium' }]}>{s}</Text>
           </TouchableOpacity>
         ))}
 
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 16 }]}>SAFETY TIPS</Text>
-        {TIPS.map((tip, i) => (
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold', marginTop: 12 }]}>
+          SAFETY REMINDERS
+        </Text>
+        {SAFETY_TIPS.map((tip, i) => (
           <View key={i} style={[styles.tipRow, { borderBottomColor: colors.border }]}>
-            <Ionicons name={tip.icon as keyof typeof Ionicons.glyphMap} size={16} color={colors.accent} />
-            <Text style={[styles.tipText, { color: colors.mutedForeground }]}>{tip.text}</Text>
+            <Text style={{ fontSize: 15 }}>{tip.emoji}</Text>
+            <Text style={[styles.tipText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{tip.text}</Text>
           </View>
         ))}
       </ScrollView>
@@ -68,72 +71,14 @@ export default function BridgeGuidePanel({ onUseSuggestion, isVisible, onClose, 
 }
 
 const styles = StyleSheet.create({
-  panel: {
-    borderTopWidth: 1,
-    maxHeight: 280,
-    paddingTop: 12,
-  },
-  panelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-  },
-  panelTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  aiDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  panelTitle: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-  },
-  aiLabel: {
-    fontSize: 10,
-    fontWeight: '700' as const,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    overflow: 'hidden' as const,
-  },
-  scroll: {
-    paddingHorizontal: 16,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
-  suggestionCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 12,
-    marginBottom: 8,
-    gap: 8,
-  },
-  suggestionText: {
-    fontSize: 13,
-    flex: 1,
-    lineHeight: 18,
-    fontWeight: '500' as const,
-  },
-  tipRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 8,
-    gap: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  tipText: {
-    fontSize: 13,
-    flex: 1,
-    lineHeight: 18,
-  },
+  panel: { borderTopWidth: 1, maxHeight: 290, paddingTop: 12 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 },
+  aiPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
+  aiPillText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' as const },
+  scroll: { paddingHorizontal: 16 },
+  sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginBottom: 8 },
+  suggCard: { flexDirection: 'row', alignItems: 'flex-start', padding: 11, marginBottom: 8, gap: 8 },
+  suggText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  tipRow: { flexDirection: 'row', gap: 8, paddingVertical: 7, borderBottomWidth: StyleSheet.hairlineWidth, alignItems: 'flex-start' },
+  tipText: { flex: 1, fontSize: 13, lineHeight: 18 },
 });
