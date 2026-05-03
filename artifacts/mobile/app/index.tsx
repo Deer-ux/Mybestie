@@ -41,8 +41,8 @@ export default function LandingScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.loadingScreen, { backgroundColor: colors.light.background }]}>
-        <ActivityIndicator color={colors.light.primary} size="large" />
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator color="#FF2D95" size="large" />
       </View>
     );
   }

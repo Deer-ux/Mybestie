@@ -30,6 +30,7 @@ interface AppContextType {
   addBadge: (badgeId: string) => Promise<void>;
   incrementChats: () => Promise<void>;
   resetUser: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -132,8 +133,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
   }
 
+  async function logout() {
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+      const inboxKeys = await AsyncStorage.getAllKeys();
+      const inboxToRemove = inboxKeys.filter(k => k.startsWith('@inbox_'));
+      if (inboxToRemove.length > 0) {
+        await AsyncStorage.multiRemove(inboxToRemove);
+      }
+    } catch {
+    }
+    setUser(null);
+  }
+
   return (
-    <AppContext.Provider value={{ user, isLoading, isTeenMode, updateUser, completeOnboarding, addBadge, incrementChats, resetUser }}>
+    <AppContext.Provider value={{ user, isLoading, isTeenMode, updateUser, completeOnboarding, addBadge, incrementChats, resetUser, logout }}>
       {children}
     </AppContext.Provider>
   );

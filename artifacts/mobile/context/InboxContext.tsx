@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type MessageCategory =
-  | 'compliment' | 'honest_opinion' | 'confession' | 'advice'
-  | 'question' | 'encouragement' | 'feedback' | 'secret' | 'joke' | 'other';
+  | 'compliment' | 'question' | 'advice' | 'confession'
+  | 'encouragement' | 'feedback' | 'other';
 
 export type ModerationStatus = 'approved' | 'hidden';
 
@@ -32,6 +32,7 @@ interface InboxContextType {
   reportMessage: (id: string) => void;
   replyToMessage: (id: string, reply: string) => void;
   loadMessagesForSlug: (slug: string) => Promise<void>;
+  refreshInbox: () => Promise<void>;
 }
 
 const InboxContext = createContext<InboxContextType | undefined>(undefined);
@@ -39,8 +40,6 @@ const InboxContext = createContext<InboxContextType | undefined>(undefined);
 function makeId() { return Date.now().toString() + Math.random().toString(36).substr(2, 9); }
 function makeFingerprint() { return Math.random().toString(36).substr(2, 16); }
 
-// Only block genuinely extreme content — normal criticism, jokes, confessions,
-// honest opinions, and emotional messages are allowed through.
 const EXTREME_BLOCKED = [
   'kill yourself', 'kys', 'go kill yourself', 'i will kill you', 'i will find you',
   'i know where you live', 'come to your house', 'show up at your',
@@ -58,74 +57,48 @@ function moderateContent(content: string): ModerationStatus {
   return 'approved';
 }
 
-const DEMO_MESSAGES: AnonymousMessage[] = [
-  {
-    id: 'demo1', recipientSlug: '', category: 'compliment',
-    content: 'You seem like a genuinely kind and thoughtful person. Your anonymous profile has such a calm energy 😊',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    senderFingerprint: 'demo-a', moderationStatus: 'approved',
-    isRead: false, isSaved: false, isReported: false,
-  },
-  {
-    id: 'demo2', recipientSlug: '', category: 'honest_opinion',
-    content: 'Honestly? I think you\'re harder on yourself than you need to be. From the outside looking in, you\'re doing better than you think.',
-    timestamp: new Date(Date.now() - 7200000).toISOString(),
-    senderFingerprint: 'demo-b', moderationStatus: 'approved',
-    isRead: false, isSaved: false, isReported: false,
-  },
-  {
-    id: 'demo3', recipientSlug: '', category: 'confession',
-    content: 'I\'ve always wanted to tell you that you inspired me to start being more open about my feelings. I never said it out loud before.',
-    timestamp: new Date(Date.now() - 14400000).toISOString(),
-    senderFingerprint: 'demo-c', moderationStatus: 'approved',
-    isRead: false, isSaved: true, isReported: false,
-  },
-  {
-    id: 'demo4', recipientSlug: '', category: 'encouragement',
-    content: 'Whatever you\'re going through right now — keep going. You\'re closer than you think. ✨',
-    timestamp: new Date(Date.now() - 86400000).toISOString(),
-    senderFingerprint: 'demo-d', moderationStatus: 'approved',
-    isRead: true, isSaved: false, isReported: false,
-  },
-  {
-    id: 'demo5', recipientSlug: '', category: 'joke',
-    content: 'Why do anonymous messages feel so powerful? Because they\'re basically thoughts that got brave enough to leave the brain 😂',
-    timestamp: new Date(Date.now() - 172800000).toISOString(),
-    senderFingerprint: 'demo-e', moderationStatus: 'approved',
-    isRead: true, isSaved: false, isReported: false,
-  },
-];
-
 export function InboxProvider({ children, userSlug }: { children: ReactNode; userSlug?: string }) {
   const [messages, setMessages] = useState<AnonymousMessage[]>([]);
+  const currentSlugRef = useRef<string>('');
 
   const approved = messages.filter(m => m.moderationStatus === 'approved' && !m.isReported);
   const unreadCount = approved.filter(m => !m.isRead).length;
   const totalCount = messages.length;
 
   useEffect(() => {
-    if (userSlug) loadMessagesForSlug(userSlug);
+    if (userSlug) {
+      currentSlugRef.current = userSlug;
+      loadMessagesForSlug(userSlug);
+    } else {
+      setMessages([]);
+    }
   }, [userSlug]);
 
   async function loadMessagesForSlug(slug: string) {
+    if (!slug) { setMessages([]); return; }
+    currentSlugRef.current = slug;
     try {
       const stored = await AsyncStorage.getItem(`@inbox_${slug}`);
       if (stored) {
         setMessages(JSON.parse(stored));
       } else {
-        const initial = DEMO_MESSAGES.map(m => ({ ...m, recipientSlug: slug }));
-        await AsyncStorage.setItem(`@inbox_${slug}`, JSON.stringify(initial));
-        setMessages(initial);
+        setMessages([]);
       }
     } catch {
       setMessages([]);
     }
   }
 
+  async function refreshInbox() {
+    if (currentSlugRef.current) {
+      await loadMessagesForSlug(currentSlugRef.current);
+    }
+  }
+
   async function persist(updated: AnonymousMessage[]) {
     setMessages(updated);
-    if (updated.length > 0) {
-      const slug = updated[0].recipientSlug;
+    const slug = currentSlugRef.current;
+    if (slug) {
       await AsyncStorage.setItem(`@inbox_${slug}`, JSON.stringify(updated));
     }
   }
@@ -135,12 +108,16 @@ export function InboxProvider({ children, userSlug }: { children: ReactNode; use
 
     const status = moderateContent(content);
     const newMsg: AnonymousMessage = {
-      id: makeId(), recipientSlug, category,
+      id: makeId(),
+      recipientSlug,
+      category,
       content: content.trim(),
       timestamp: new Date().toISOString(),
       senderFingerprint: makeFingerprint(),
       moderationStatus: status,
-      isRead: false, isSaved: false, isReported: false,
+      isRead: false,
+      isSaved: false,
+      isReported: false,
     };
 
     try {
@@ -148,7 +125,7 @@ export function InboxProvider({ children, userSlug }: { children: ReactNode; use
       const existing: AnonymousMessage[] = stored ? JSON.parse(stored) : [];
       const updated = [newMsg, ...existing];
       await AsyncStorage.setItem(`@inbox_${recipientSlug}`, JSON.stringify(updated));
-      if (messages.length > 0 && messages[0].recipientSlug === recipientSlug) {
+      if (currentSlugRef.current === recipientSlug) {
         setMessages(updated);
       }
       return { success: true, blocked: status === 'hidden' };
@@ -169,7 +146,7 @@ export function InboxProvider({ children, userSlug }: { children: ReactNode; use
     <InboxContext.Provider value={{
       messages, unreadCount, totalCount, sendMessage,
       markAsRead, saveMessage, deleteMessage, reportMessage, replyToMessage,
-      loadMessagesForSlug,
+      loadMessagesForSlug, refreshInbox,
     }}>
       {children}
     </InboxContext.Provider>
