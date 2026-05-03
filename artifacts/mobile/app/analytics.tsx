@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Platform, TextInput, ActivityIndicator,
+  Platform, ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,7 +12,6 @@ import { useApp } from '@/context/AppContext';
 import GlassCard from '@/components/GlassCard';
 import BlobBackground from '@/components/BlobBackground';
 import { getMetrics, AnalyticsMetrics } from '@/utils/analytics';
-import { verifyOwner, getOwnerConfig, OwnerConfig } from '@/utils/ownerAuth';
 import colors from '@/constants/colors';
 
 const PINK  = '#FF2D95';
@@ -91,27 +90,15 @@ export default function AnalyticsScreen() {
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const [authed, setAuthed]       = useState(false);
-  const [pin, setPin]             = useState('');
-  const [pinError, setPinError]   = useState('');
-  const [ownerConfig, setOwnerConfig] = useState<OwnerConfig | null>(null);
-  const [authLoading, setAuthLoading] = useState(false);
-  const [metrics, setMetrics]     = useState<AnalyticsMetrics | null>(null);
-  const [loading, setLoading]     = useState(false);
+  const [metrics, setMetrics] = useState<AnalyticsMetrics | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const isOwner = user?.role === 'owner' || user?.isAdmin === true;
 
   useEffect(() => {
-    getOwnerConfig().then(setOwnerConfig);
-    if (user && !user.isAdmin) router.replace('/(tabs)/home');
-  }, [user]);
-
-  async function handleVerify() {
-    if (!pin.trim()) { setPinError('Please enter your owner password.'); return; }
-    setAuthLoading(true);
-    const ok = await verifyOwner(pin);
-    setAuthLoading(false);
-    if (ok) { setAuthed(true); loadMetrics(); }
-    else { setPinError('Incorrect password. Try again.'); setPin(''); }
-  }
+    if (!isOwner) return;
+    loadMetrics();
+  }, [isOwner]);
 
   const loadMetrics = useCallback(async () => {
     setLoading(true);
@@ -120,71 +107,32 @@ export default function AnalyticsScreen() {
     setLoading(false);
   }, []);
 
-  // ── Auth gate ──────────────────────────────────────────────────────────────
-
-  if (!authed) {
+  // ── Access Denied — not an owner ──────────────────────────────────────────
+  if (!isOwner) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center', padding: 32 }]}>
         <BlobBackground variant="purple" />
-        <LinearGradient colors={['#1A0B2E', '#050505']} style={[styles.authHeader, { paddingTop: topPad + 16 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color="#FFF" />
+        <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', gap: 18 }}>
+          <Text style={{ fontSize: 56 }}>🚫</Text>
+          <Text style={{ color: '#FFFFFF', fontSize: 22, fontFamily: 'SpaceGrotesk_700Bold', textAlign: 'center' }}>
+            Access Denied
+          </Text>
+          <Text style={{ color: MUTED, fontSize: 14, lineHeight: 21, textAlign: 'center', fontFamily: 'Inter_400Regular' }}>
+            This page is restricted to the app owner. If you are the owner, please log in with your owner credentials.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.replace('/owner-login')}
+            style={{ borderRadius: 16, overflow: 'hidden' as const, width: '100%' }}
+            activeOpacity={0.88}
+          >
+            <LinearGradient colors={['#6C0FBF', '#2D0B6B']} style={{ paddingVertical: 15, alignItems: 'center' }}>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'SpaceGrotesk_700Bold' }}>Owner Login</Text>
+            </LinearGradient>
           </TouchableOpacity>
-          <Text style={styles.authTitle}>📊 Analytics</Text>
-          <Text style={styles.authSub}>Owner-only access</Text>
-        </LinearGradient>
-
-        <ScrollView contentContainerStyle={[styles.authBody, { paddingBottom: botPad + 40 }]}>
-          <Animated.View entering={FadeInDown.delay(100)}>
-            <GlassCard style={styles.authCard} padding={24} neonBorder>
-              <View style={styles.shieldWrap}>
-                <Text style={{ fontSize: 52 }}>🔐</Text>
-              </View>
-              <Text style={styles.authCardTitle}>Owner Authentication</Text>
-              <Text style={styles.authCardSub}>
-                {ownerConfig
-                  ? `Signed in as: ${ownerConfig.displayName}`
-                  : 'Enter your owner password to access the analytics dashboard.'}
-              </Text>
-
-              <View style={[styles.pinInput, { borderColor: pinError ? '#FF4455' : 'rgba(255,45,149,0.35)' }]}>
-                <Ionicons name="lock-closed-outline" size={18} color={MUTED} />
-                <TextInput
-                  style={styles.pinText}
-                  value={pin}
-                  onChangeText={t => { setPin(t); setPinError(''); }}
-                  placeholder="Enter owner password"
-                  placeholderTextColor="rgba(255,255,255,0.30)"
-                  secureTextEntry
-                  onSubmitEditing={handleVerify}
-                  autoFocus
-                />
-              </View>
-              {pinError !== '' && <Text style={styles.pinError}>{pinError}</Text>}
-
-              <TouchableOpacity
-                onPress={handleVerify}
-                disabled={authLoading || !pin.trim()}
-                style={[styles.verifyBtn, { opacity: pin.trim() ? 1 : 0.4 }]}
-              >
-                <LinearGradient colors={colors.gradPrimary} style={styles.verifyGrad}>
-                  {authLoading
-                    ? <ActivityIndicator color="#FFF" />
-                    : <Text style={styles.verifyText}>Verify & Enter Dashboard</Text>
-                  }
-                </LinearGradient>
-              </TouchableOpacity>
-
-              <View style={styles.defaultHint}>
-                <Text style={{ fontSize: 14 }}>💡</Text>
-                <Text style={styles.hintText}>
-                  Default password: <Text style={{ fontFamily: 'Inter_700Bold', color: PINK }}>MindBridge2025</Text>
-                  {'\n'}Change it in Admin → Owner Setup.
-                </Text>
-              </View>
-            </GlassCard>
-          </Animated.View>
-        </ScrollView>
+          <TouchableOpacity onPress={() => router.back()} style={{ paddingVertical: 8 }}>
+            <Text style={{ color: MUTED, fontSize: 13, fontFamily: 'Inter_500Medium' }}>← Go back</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     );
   }
@@ -219,16 +167,12 @@ export default function AnalyticsScreen() {
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>📊 Analytics</Text>
-            <Text style={styles.headerSub}>{ownerConfig?.displayName ?? 'Owner'} · Owner View</Text>
+            <Text style={styles.headerSub}>Owner · Restricted View</Text>
           </View>
-          <TouchableOpacity onPress={() => setAuthed(false)} style={styles.lockBtn}>
-            <Ionicons name="lock-closed" size={20} color="rgba(255,255,255,0.7)" />
+          <TouchableOpacity onPress={loadMetrics} style={styles.lockBtn}>
+            <Ionicons name="refresh" size={20} color="rgba(255,255,255,0.7)" />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={loadMetrics} style={styles.refreshBtn}>
-          <Ionicons name="refresh" size={14} color="#FFF" />
-          <Text style={styles.refreshText}>Refresh data</Text>
-        </TouchableOpacity>
       </LinearGradient>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 18, paddingBottom: botPad + 40 }} showsVerticalScrollIndicator={false}>
@@ -370,50 +314,21 @@ export default function AnalyticsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050505' },
-  authHeader: { paddingHorizontal: 20, paddingBottom: 24, gap: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
-  authBody: { padding: 20, alignItems: 'center' },
-  authCard: { width: '100%', alignItems: 'center', gap: 16 },
-  shieldWrap: { marginTop: 8 },
-  authTitle: { color: '#FFFFFF', fontSize: 22, fontFamily: 'SpaceGrotesk_700Bold' },
-  authSub: { color: MUTED, fontSize: 13, fontFamily: 'Inter_400Regular' },
-  authCardTitle: { color: PINK, fontSize: 22, textAlign: 'center', fontFamily: 'SpaceGrotesk_700Bold' },
-  authCardSub: { color: MUTED, fontSize: 13, textAlign: 'center', lineHeight: 19, fontFamily: 'Inter_400Regular' },
-  pinInput: {
-    flexDirection: 'row', alignItems: 'center', width: '100%',
-    borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, gap: 10, borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
-  pinText: { flex: 1, fontSize: 15, color: '#FFFFFF', fontFamily: 'Inter_400Regular' },
-  pinError: { fontSize: 13, alignSelf: 'flex-start', color: '#FF4455', fontFamily: 'Inter_400Regular' },
-  verifyBtn: { width: '100%', borderRadius: 20, overflow: 'hidden' as const },
-  verifyGrad: { paddingVertical: 15, alignItems: 'center' },
-  verifyText: { color: '#FFFFFF', fontSize: 15, fontFamily: 'SpaceGrotesk_600SemiBold' },
-  defaultHint: {
-    flexDirection: 'row', alignItems: 'flex-start', padding: 12, gap: 8, width: '100%',
-    backgroundColor: 'rgba(255,45,149,0.10)', borderRadius: 12,
-  },
-  hintText: { flex: 1, fontSize: 12, lineHeight: 18, color: MUTED, fontFamily: 'Inter_400Regular' },
-  loadingText: { color: MUTED, fontSize: 14, marginTop: 12, fontFamily: 'Inter_400Regular' },
-  header: { paddingHorizontal: 18, paddingBottom: 16, gap: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  backBtn: { padding: 4 },
+  container:    { flex: 1, backgroundColor: '#050505' },
+  loadingText:  { color: MUTED, fontSize: 14, marginTop: 12, fontFamily: 'Inter_400Regular' },
+  header:       { paddingHorizontal: 18, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+  headerRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  backBtn:      { padding: 4 },
   headerCenter: { flex: 1 },
-  headerTitle: { color: '#FFFFFF', fontSize: 20, fontFamily: 'SpaceGrotesk_700Bold' },
-  headerSub: { color: MUTED, fontSize: 12, marginTop: 1, fontFamily: 'Inter_400Regular' },
-  lockBtn: { padding: 4 },
-  refreshBtn: {
-    flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-  },
-  refreshText: { color: '#FFFFFF', fontSize: 12, fontFamily: 'Inter_500Medium' },
-  section: { color: '#FFFFFF', fontSize: 16, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 10 },
-  cardRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  chartCard: { marginTop: 8 },
-  chartTitle: { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter_600SemiBold', marginBottom: 10 },
-  funnelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  funnelEmoji: { fontSize: 15 },
-  funnelLabel: { flex: 1, fontSize: 12, color: '#FFFFFF', fontFamily: 'Inter_500Medium' },
-  funnelValue: { fontSize: 12, fontFamily: 'SpaceGrotesk_600SemiBold' },
+  headerTitle:  { color: '#FFFFFF', fontSize: 20, fontFamily: 'SpaceGrotesk_700Bold' },
+  headerSub:    { color: MUTED, fontSize: 12, marginTop: 1, fontFamily: 'Inter_400Regular' },
+  lockBtn:      { padding: 4 },
+  section:      { color: '#FFFFFF', fontSize: 16, fontFamily: 'SpaceGrotesk_700Bold', marginBottom: 10 },
+  cardRow:      { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  chartCard:    { marginTop: 8 },
+  chartTitle:   { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter_600SemiBold', marginBottom: 10 },
+  funnelRow:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  funnelEmoji:  { fontSize: 15 },
+  funnelLabel:  { flex: 1, fontSize: 12, color: '#FFFFFF', fontFamily: 'Inter_500Medium' },
+  funnelValue:  { fontSize: 12, fontFamily: 'SpaceGrotesk_600SemiBold' },
 });

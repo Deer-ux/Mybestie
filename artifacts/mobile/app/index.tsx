@@ -303,12 +303,12 @@ export default function LandingScreen() {
               This area is for the app owner only. Regular users do not need a password — your account is anonymous.
             </Text>
             <TouchableOpacity
-              onPress={() => { setShowOwner(false); router.push('/admin'); }}
+              onPress={() => { setShowOwner(false); router.push('/owner-login'); }}
               style={styles.ownerBtn}
               activeOpacity={0.88}
             >
               <LinearGradient colors={['#6C0FBF', '#2D0B6B']} style={styles.ownerBtnGrad}>
-                <Text style={styles.ownerBtnText}>Enter Admin Dashboard</Text>
+                <Text style={styles.ownerBtnText}>Owner Login</Text>
               </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowOwner(false)} style={styles.ownerCancelBtn}>

@@ -210,7 +210,7 @@ export default function HomeScreen() {
             {[
               { emoji: '🛡️', label: 'Safety Center',  bg: 'rgba(0,255,136,0.08)', col: GREEN,   route: '/safety'          },
               { emoji: '🌟', label: 'My Badges',       bg: 'rgba(255,45,149,0.08)', col: PINK,   route: '/(tabs)/badges'   },
-              { emoji: '⚙️', label: 'Admin Panel',     bg: 'rgba(0,212,255,0.08)', col: CYAN,    route: '/admin'           },
+              ...(user?.isAdmin ? [{ emoji: '⚙️', label: 'Admin Panel', bg: 'rgba(0,212,255,0.08)', col: CYAN, route: '/admin' as const }] : []),
               { emoji: '📝', label: 'Feedback',        bg: 'rgba(255,255,255,0.05)', col: MUTED, route: '/feedback'        },
             ].map(item => (
               <TouchableOpacity
