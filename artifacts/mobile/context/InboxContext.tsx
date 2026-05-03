@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type MessageCategory = 'compliment' | 'advice' | 'confession' | 'question' | 'encouragement' | 'feedback' | 'secret' | 'other';
-export type ModerationStatus = 'approved' | 'flagged' | 'blocked';
+export type MessageCategory =
+  | 'compliment' | 'honest_opinion' | 'confession' | 'advice'
+  | 'question' | 'encouragement' | 'feedback' | 'secret' | 'joke' | 'other';
+
+export type ModerationStatus = 'approved' | 'hidden';
 
 export interface AnonymousMessage {
   id: string;
@@ -21,7 +24,8 @@ export interface AnonymousMessage {
 interface InboxContextType {
   messages: AnonymousMessage[];
   unreadCount: number;
-  sendMessage: (recipientSlug: string, category: MessageCategory, content: string) => Promise<{ success: boolean; reason?: string }>;
+  totalCount: number;
+  sendMessage: (recipientSlug: string, category: MessageCategory, content: string) => Promise<{ success: boolean; blocked?: boolean }>;
   markAsRead: (id: string) => void;
   saveMessage: (id: string) => void;
   deleteMessage: (id: string) => void;
@@ -35,44 +39,59 @@ const InboxContext = createContext<InboxContextType | undefined>(undefined);
 function makeId() { return Date.now().toString() + Math.random().toString(36).substr(2, 9); }
 function makeFingerprint() { return Math.random().toString(36).substr(2, 16); }
 
-const BLOCKED_PATTERNS = [
-  'hate you', 'kill yourself', 'go die', 'you\'re ugly', 'you are ugly', 'kys',
-  'nude', 'send pic', 'phone number', 'whatsapp', 'address', 'where do you live',
-  'suicide', 'i will find you', 'threat', 'bomb', 'rape', 'sexual',
-];
-
-const FLAGGED_PATTERNS = [
-  'idiot', 'stupid', 'loser', 'worthless', 'dumb', 'pathetic', 'freak',
-  'scam', 'click this link', 'free money', 'send $',
+// Only block genuinely extreme content — normal criticism, jokes, confessions,
+// honest opinions, and emotional messages are allowed through.
+const EXTREME_BLOCKED = [
+  'kill yourself', 'kys', 'go kill yourself', 'i will kill you', 'i will find you',
+  'i know where you live', 'come to your house', 'show up at your',
+  'send nudes', 'send me nudes', 'nude pic', 'sex with me', 'rape you', 'molest',
+  'cut yourself', 'harm yourself', 'end your life', 'end it all', 'you should die',
+  'bomb', 'shooting', 'stab you',
+  'doxx', 'your real name is', 'your address is', 'your phone is',
+  'bit.ly', 'tinyurl', 'click here for free', 'free money transfer', 'send $', 'bitcoin scam',
+  '@gmail.com', '@yahoo.com', '@hotmail', 'telegram me at', 'whatsapp me at',
 ];
 
 function moderateContent(content: string): ModerationStatus {
   const lower = content.toLowerCase();
-  if (BLOCKED_PATTERNS.some(p => lower.includes(p))) return 'blocked';
-  if (FLAGGED_PATTERNS.some(p => lower.includes(p))) return 'flagged';
+  if (EXTREME_BLOCKED.some(p => lower.includes(p))) return 'hidden';
   return 'approved';
 }
 
 const DEMO_MESSAGES: AnonymousMessage[] = [
   {
     id: 'demo1', recipientSlug: '', category: 'compliment',
-    content: 'Your anonymous profile feels really calming and welcoming. You seem like a genuinely kind person. 😊',
-    timestamp: new Date(Date.now() - 7200000).toISOString(),
+    content: 'You seem like a genuinely kind and thoughtful person. Your anonymous profile has such a calm energy 😊',
+    timestamp: new Date(Date.now() - 3600000).toISOString(),
     senderFingerprint: 'demo-a', moderationStatus: 'approved',
     isRead: false, isSaved: false, isReported: false,
   },
   {
-    id: 'demo2', recipientSlug: '', category: 'encouragement',
-    content: 'Keep going! Whatever you\'re working toward, you\'re doing better than you think. ✨',
-    timestamp: new Date(Date.now() - 14400000).toISOString(),
+    id: 'demo2', recipientSlug: '', category: 'honest_opinion',
+    content: 'Honestly? I think you\'re harder on yourself than you need to be. From the outside looking in, you\'re doing better than you think.',
+    timestamp: new Date(Date.now() - 7200000).toISOString(),
     senderFingerprint: 'demo-b', moderationStatus: 'approved',
+    isRead: false, isSaved: false, isReported: false,
+  },
+  {
+    id: 'demo3', recipientSlug: '', category: 'confession',
+    content: 'I\'ve always wanted to tell you that you inspired me to start being more open about my feelings. I never said it out loud before.',
+    timestamp: new Date(Date.now() - 14400000).toISOString(),
+    senderFingerprint: 'demo-c', moderationStatus: 'approved',
     isRead: false, isSaved: true, isReported: false,
   },
   {
-    id: 'demo3', recipientSlug: '', category: 'question',
-    content: 'What advice would you give someone who feels stuck in life?',
+    id: 'demo4', recipientSlug: '', category: 'encouragement',
+    content: 'Whatever you\'re going through right now — keep going. You\'re closer than you think. ✨',
     timestamp: new Date(Date.now() - 86400000).toISOString(),
-    senderFingerprint: 'demo-c', moderationStatus: 'approved',
+    senderFingerprint: 'demo-d', moderationStatus: 'approved',
+    isRead: true, isSaved: false, isReported: false,
+  },
+  {
+    id: 'demo5', recipientSlug: '', category: 'joke',
+    content: 'Why do anonymous messages feel so powerful? Because they\'re basically thoughts that got brave enough to leave the brain 😂',
+    timestamp: new Date(Date.now() - 172800000).toISOString(),
+    senderFingerprint: 'demo-e', moderationStatus: 'approved',
     isRead: true, isSaved: false, isReported: false,
   },
 ];
@@ -80,12 +99,12 @@ const DEMO_MESSAGES: AnonymousMessage[] = [
 export function InboxProvider({ children, userSlug }: { children: ReactNode; userSlug?: string }) {
   const [messages, setMessages] = useState<AnonymousMessage[]>([]);
 
-  const unreadCount = messages.filter(m => !m.isRead && m.moderationStatus === 'approved').length;
+  const approved = messages.filter(m => m.moderationStatus === 'approved' && !m.isReported);
+  const unreadCount = approved.filter(m => !m.isRead).length;
+  const totalCount = messages.length;
 
   useEffect(() => {
-    if (userSlug) {
-      loadMessagesForSlug(userSlug);
-    }
+    if (userSlug) loadMessagesForSlug(userSlug);
   }, [userSlug]);
 
   async function loadMessagesForSlug(slug: string) {
@@ -112,25 +131,16 @@ export function InboxProvider({ children, userSlug }: { children: ReactNode; use
   }
 
   async function sendMessage(recipientSlug: string, category: MessageCategory, content: string) {
-    if (!content.trim()) return { success: false, reason: 'Message cannot be empty.' };
-    if (content.length < 3) return { success: false, reason: 'Message is too short.' };
+    if (!content.trim() || content.trim().length < 2) return { success: false };
 
     const status = moderateContent(content);
-    if (status === 'blocked') {
-      return { success: false, reason: 'This message may violate MindBridge safety rules and was not delivered.' };
-    }
-
     const newMsg: AnonymousMessage = {
-      id: makeId(),
-      recipientSlug,
-      category,
+      id: makeId(), recipientSlug, category,
       content: content.trim(),
       timestamp: new Date().toISOString(),
       senderFingerprint: makeFingerprint(),
       moderationStatus: status,
-      isRead: false,
-      isSaved: false,
-      isReported: false,
+      isRead: false, isSaved: false, isReported: false,
     };
 
     try {
@@ -138,45 +148,27 @@ export function InboxProvider({ children, userSlug }: { children: ReactNode; use
       const existing: AnonymousMessage[] = stored ? JSON.parse(stored) : [];
       const updated = [newMsg, ...existing];
       await AsyncStorage.setItem(`@inbox_${recipientSlug}`, JSON.stringify(updated));
-
       if (messages.length > 0 && messages[0].recipientSlug === recipientSlug) {
         setMessages(updated);
       }
-      return { success: true };
+      return { success: true, blocked: status === 'hidden' };
     } catch {
-      return { success: false, reason: 'Failed to send. Please try again.' };
+      return { success: false };
     }
   }
 
-  function markAsRead(id: string) {
-    const updated = messages.map(m => m.id === id ? { ...m, isRead: true } : m);
-    persist(updated);
-  }
-
-  function saveMessage(id: string) {
-    const updated = messages.map(m => m.id === id ? { ...m, isSaved: !m.isSaved } : m);
-    persist(updated);
-  }
-
-  function deleteMessage(id: string) {
-    const updated = messages.filter(m => m.id !== id);
-    persist(updated);
-  }
-
-  function reportMessage(id: string) {
-    const updated = messages.map(m => m.id === id ? { ...m, isReported: true } : m);
-    persist(updated);
-  }
-
+  function markAsRead(id: string) { persist(messages.map(m => m.id === id ? { ...m, isRead: true } : m)); }
+  function saveMessage(id: string) { persist(messages.map(m => m.id === id ? { ...m, isSaved: !m.isSaved } : m)); }
+  function deleteMessage(id: string) { persist(messages.filter(m => m.id !== id)); }
+  function reportMessage(id: string) { persist(messages.map(m => m.id === id ? { ...m, isReported: true } : m)); }
   function replyToMessage(id: string, reply: string) {
-    const updated = messages.map(m => m.id === id ? { ...m, publicReply: reply, isRead: true } : m);
-    persist(updated);
+    persist(messages.map(m => m.id === id ? { ...m, publicReply: reply, isRead: true } : m));
   }
 
   return (
     <InboxContext.Provider value={{
-      messages, unreadCount, sendMessage, markAsRead,
-      saveMessage, deleteMessage, reportMessage, replyToMessage,
+      messages, unreadCount, totalCount, sendMessage,
+      markAsRead, saveMessage, deleteMessage, reportMessage, replyToMessage,
       loadMessagesForSlug,
     }}>
       {children}
