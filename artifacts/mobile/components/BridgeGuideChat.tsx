@@ -8,9 +8,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
 import {
-  getBridgeResponse, getIntentLabel, getIntentEmoji,
-  QUICK_ACTIONS, BridgeIntent, ConversationMessage, UserContext,
+  getIntentLabel, getIntentEmoji, QUICK_ACTIONS, BridgeIntent,
+  ConversationMessage,
 } from '@/utils/bridgeGuide';
+import { callBridgeGuideApi, buildHistoryForApi } from '@/utils/bridgeguideApi';
 import { trackEvent } from '@/utils/analytics';
 import colors from '@/constants/colors';
 
@@ -21,14 +22,14 @@ interface ChatMessage {
   id: string;
   text: string;
   isUser: boolean;
-  intent?: BridgeIntent;
+  isError?: boolean;
   timestamp: Date;
 }
 
 const GREETING: ChatMessage = {
   id: 'welcome',
   isUser: false,
-  text: "Hey! I'm BridgeGuide — your AI companion on MindBridge.\n\nI can help with career advice, study tips, habits, culture, conversation starters, or just a chat. What's on your mind?",
+  text: "Hey! I'm BridgeGuide — your AI companion on MindBridge.\n\nAsk me anything: career, skills, study tips, habits, culture, life advice, or just a chat. What's on your mind?",
   timestamp: new Date(),
 };
 
@@ -46,9 +47,10 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  function handleSend(text?: string) {
+  async function handleSend(text?: string) {
     const msg = (text ?? input).trim();
-    if (!msg) return;
+    if (!msg || isTyping) return;
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     const userMsg: ChatMessage = { id: makeId(), text: msg, isUser: true, timestamp: new Date() };
@@ -57,36 +59,48 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
     setInput('');
     setIsTyping(true);
 
-    // Build context from conversation history (last 10 messages)
-    const history: ConversationMessage[] = updatedMessages.slice(-10).map(m => ({
+    // Build conversation history for the API (exclude the greeting and the just-added user message)
+    const historyMessages: ConversationMessage[] = updatedMessages.slice(1).map(m => ({
       text: m.text,
       isUser: m.isUser,
     }));
+    // The last item is the current user message — exclude it so it goes as `message` param
+    const priorHistory = historyMessages.slice(0, -1);
 
-    const ctx: UserContext = {
-      mood: user?.mood,
-      goal: user?.goal,
-      personality: user?.personality,
-      temperament: user?.temperament,
-      interests: user?.interests,
-      ageGroup: user?.ageGroup,
-      username: user?.username,
-      history,
-    };
+    try {
+      const reply = await callBridgeGuideApi({
+        message: msg,
+        conversationHistory: buildHistoryForApi(priorHistory),
+        userMood: user?.mood,
+        userInterests: user?.interests,
+        userPersonality: user?.personality,
+        userTemperament: user?.temperament,
+      });
 
-    // Simulate natural typing delay (shorter for short messages)
-    const typingDelay = msg.length < 20 ? 700 : 1000 + Math.random() * 700;
+      trackEvent('bridge_guide_question', user?.id, { source: 'real_ai' });
 
-    setTimeout(() => {
-      const { intent, response } = getBridgeResponse(msg, ctx, history);
-      trackEvent('bridge_guide_question', user?.id, { intent });
       const aiMsg: ChatMessage = {
-        id: makeId(), text: response, isUser: false, intent, timestamp: new Date(),
+        id: makeId(), text: reply, isUser: false, timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiMsg]);
+    } catch (err: unknown) {
+      const errorText =
+        err instanceof Error
+          ? err.message
+          : 'Something went wrong. Please try again.';
+
+      const errMsg: ChatMessage = {
+        id: makeId(),
+        text: `⚠️ ${errorText}`,
+        isUser: false,
+        isError: true,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errMsg]);
+    } finally {
       setIsTyping(false);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-    }, typingDelay);
+    }
   }
 
   const showQuickActions = messages.length <= 1;
@@ -106,7 +120,7 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
               </View>
             </View>
             <Text style={styles.headerStatus}>
-              Not a real person · Always honest · Always here
+              Not a real person · Powered by AI · Always here
             </Text>
           </View>
           {onClose && (
@@ -127,17 +141,11 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
         {messages.map(msg => (
           <View key={msg.id} style={[styles.msgRow, msg.isUser ? styles.msgRowRight : styles.msgRowLeft]}>
             {!msg.isUser && (
-              <View style={styles.aiDot}>
-                <Text style={{ fontSize: 13 }}>✨</Text>
+              <View style={[styles.aiDot, msg.isError && styles.aiDotError]}>
+                <Text style={{ fontSize: 13 }}>{msg.isError ? '⚠️' : '✨'}</Text>
               </View>
             )}
             <View style={styles.msgContent}>
-              {msg.intent && !msg.isUser && msg.intent !== 'short_unclear' && msg.intent !== 'casual_chat' && msg.intent !== 'general' && (
-                <View style={styles.intentBadge}>
-                  <Text style={{ fontSize: 11 }}>{getIntentEmoji(msg.intent)}</Text>
-                  <Text style={styles.intentText}>{getIntentLabel(msg.intent)}</Text>
-                </View>
-              )}
               {msg.isUser ? (
                 <LinearGradient
                   colors={colors.gradPrimary}
@@ -147,8 +155,10 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
                   <Text style={styles.userBubbleText}>{msg.text}</Text>
                 </LinearGradient>
               ) : (
-                <View style={styles.aiBubble}>
-                  <Text style={styles.aiBubbleText}>{msg.text}</Text>
+                <View style={[styles.aiBubble, msg.isError && styles.aiBubbleError]}>
+                  <Text style={[styles.aiBubbleText, msg.isError && styles.aiBubbleErrorText]}>
+                    {msg.text}
+                  </Text>
                 </View>
               )}
             </View>
@@ -159,7 +169,7 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
           <View style={[styles.msgRow, styles.msgRowLeft]}>
             <View style={styles.aiDot}><Text style={{ fontSize: 13 }}>✨</Text></View>
             <View style={styles.aiBubble}>
-              <Text style={styles.typingText}>BridgeGuide is typing...</Text>
+              <Text style={styles.typingText}>BridgeGuide is thinking...</Text>
             </View>
           </View>
         )}
@@ -172,6 +182,7 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
                 key={i}
                 onPress={() => handleSend(action.text)}
                 style={styles.quickBtn}
+                disabled={isTyping}
               >
                 <Text style={{ fontSize: 16 }}>{action.emoji}</Text>
                 <Text style={styles.quickBtnText}>{action.label}</Text>
@@ -193,6 +204,7 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
             multiline
             maxLength={500}
             onSubmitEditing={() => handleSend()}
+            editable={!isTyping}
           />
           <TouchableOpacity
             onPress={() => handleSend()}
@@ -213,39 +225,45 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: '#050505' },
-  chatHeader:   { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' },
-  aiAvatar:     { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,45,149,0.20)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,45,149,0.35)' },
-  headerInfo:   { flex: 1 },
-  headerNameRow:{ flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerName:   { color: '#FFFFFF', fontSize: 16, fontFamily: 'SpaceGrotesk_700Bold' },
-  aiBadge:      { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: 'rgba(255,45,149,0.25)', borderWidth: 1, borderColor: 'rgba(255,45,149,0.40)' },
-  aiBadgeText:  { color: '#FF2D95', fontSize: 10, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 0.5 },
-  headerStatus: { color: MUTED, fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 3 },
+  container:       { flex: 1, backgroundColor: '#050505' },
+  chatHeader:      { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' },
+  aiAvatar:        { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,45,149,0.20)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,45,149,0.35)' },
+  headerInfo:      { flex: 1 },
+  headerNameRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerName:      { color: '#FFFFFF', fontSize: 16, fontFamily: 'SpaceGrotesk_700Bold' },
+  aiBadge:         { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: 'rgba(255,45,149,0.25)', borderWidth: 1, borderColor: 'rgba(255,45,149,0.40)' },
+  aiBadgeText:     { color: '#FF2D95', fontSize: 10, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: 0.5 },
+  headerStatus:    { color: MUTED, fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 3 },
 
-  messageList:  { flex: 1 },
-  msgRow:       { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  msgRowRight:  { flexDirection: 'row-reverse' },
-  msgRowLeft:   {},
-  aiDot:        { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginTop: 4, flexShrink: 0, backgroundColor: 'rgba(255,45,149,0.15)' },
-  msgContent:   { flex: 1, gap: 4 },
-  intentBadge:  { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, gap: 4, backgroundColor: 'rgba(255,45,149,0.12)', borderWidth: 1, borderColor: 'rgba(255,45,149,0.25)' },
-  intentText:   { fontSize: 11, color: PINK, fontFamily: 'Inter_600SemiBold' },
-  userBubble:   { borderRadius: 16, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10 },
-  userBubbleText:{ color: '#FFFFFF', fontSize: 14, lineHeight: 21, fontFamily: 'Inter_400Regular' },
-  aiBubble:     { borderRadius: 16, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
-  aiBubbleText: { color: '#FFFFFF', fontSize: 14, lineHeight: 21, fontFamily: 'Inter_400Regular' },
-  typingText:   { fontSize: 14, fontStyle: 'italic' as const, color: MUTED, fontFamily: 'Inter_400Regular' },
+  messageList:     { flex: 1 },
+  msgRow:          { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  msgRowRight:     { flexDirection: 'row-reverse' },
+  msgRowLeft:      {},
 
-  quickSection: { gap: 8, marginTop: 8 },
-  quickLabel:   { fontSize: 11, letterSpacing: 1.8, marginBottom: 4, color: MUTED, fontFamily: 'SpaceGrotesk_600SemiBold' },
-  quickBtn:     { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10, backgroundColor: 'rgba(255,45,149,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,45,149,0.20)' },
-  quickBtnText: { flex: 1, fontSize: 14, color: '#FFFFFF', fontFamily: 'Inter_500Medium' },
+  aiDot:           { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginTop: 4, flexShrink: 0, backgroundColor: 'rgba(255,45,149,0.15)' },
+  aiDotError:      { backgroundColor: 'rgba(255,100,0,0.15)' },
 
-  inputArea:    { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)', paddingHorizontal: 12, paddingVertical: 10, gap: 6, backgroundColor: '#0B0B0F' },
-  inputRow:     { flexDirection: 'row', alignItems: 'flex-end', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 24, paddingHorizontal: 14, paddingVertical: 8, gap: 8, borderWidth: 1, borderColor: 'rgba(255,45,149,0.25)' },
-  textInput:    { flex: 1, fontSize: 14, maxHeight: 80, lineHeight: 20, color: '#FFFFFF', fontFamily: 'Inter_400Regular' },
-  sendBtnWrap:  { borderRadius: 17, overflow: 'hidden' as const },
-  sendGrad:     { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
-  disclaimer:   { fontSize: 10, textAlign: 'center', color: MUTED, fontFamily: 'Inter_400Regular' },
+  msgContent:      { flex: 1, gap: 4 },
+
+  userBubble:      { borderRadius: 16, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10 },
+  userBubbleText:  { color: '#FFFFFF', fontSize: 14, lineHeight: 21, fontFamily: 'Inter_400Regular' },
+
+  aiBubble:        { borderRadius: 16, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
+  aiBubbleText:    { color: '#FFFFFF', fontSize: 14, lineHeight: 21, fontFamily: 'Inter_400Regular' },
+  aiBubbleError:   { backgroundColor: 'rgba(255,100,0,0.08)', borderColor: 'rgba(255,100,0,0.25)' },
+  aiBubbleErrorText:{ color: 'rgba(255,150,80,0.95)' },
+
+  typingText:      { fontSize: 14, fontStyle: 'italic' as const, color: MUTED, fontFamily: 'Inter_400Regular' },
+
+  quickSection:    { gap: 8, marginTop: 8 },
+  quickLabel:      { fontSize: 11, letterSpacing: 1.8, marginBottom: 4, color: MUTED, fontFamily: 'SpaceGrotesk_600SemiBold' },
+  quickBtn:        { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10, backgroundColor: 'rgba(255,45,149,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,45,149,0.20)' },
+  quickBtnText:    { flex: 1, fontSize: 14, color: '#FFFFFF', fontFamily: 'Inter_500Medium' },
+
+  inputArea:       { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)', paddingHorizontal: 12, paddingVertical: 10, gap: 6, backgroundColor: '#0B0B0F' },
+  inputRow:        { flexDirection: 'row', alignItems: 'flex-end', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 24, paddingHorizontal: 14, paddingVertical: 8, gap: 8, borderWidth: 1, borderColor: 'rgba(255,45,149,0.25)' },
+  textInput:       { flex: 1, fontSize: 14, maxHeight: 80, lineHeight: 20, color: '#FFFFFF', fontFamily: 'Inter_400Regular' },
+  sendBtnWrap:     { borderRadius: 17, overflow: 'hidden' as const },
+  sendGrad:        { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  disclaimer:      { fontSize: 10, textAlign: 'center', color: MUTED, fontFamily: 'Inter_400Regular' },
 });
