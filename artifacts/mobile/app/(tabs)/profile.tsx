@@ -88,11 +88,11 @@ export default function ProfileScreen() {
       if (confirming === 'logout') {
         setConfirming(null);
         await logout();
-        router.replace('/onboarding');
+        router.replace('/');
       } else if (confirming === 'reset') {
         setConfirming(null);
         await resetUser();
-        router.replace('/onboarding');
+        router.replace('/');
       }
     } finally {
       setBusy(false);
