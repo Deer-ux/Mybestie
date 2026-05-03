@@ -7,23 +7,27 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
 import { useInbox } from '@/context/InboxContext';
-import { useColors } from '@/hooks/useColors';
 import { trackEvent } from '@/utils/analytics';
 import AvatarDisplay from '@/components/AvatarDisplay';
 import BlobBackground from '@/components/BlobBackground';
 import GlassCard from '@/components/GlassCard';
 import { MOODS, GOALS, PERSONALITIES } from '@/utils/helpers';
+import colors from '@/constants/colors';
+
+const PINK   = '#FF2D95';
+const CYAN   = '#00D4FF';
+const GREEN  = '#00FF88';
+const MUTED  = 'rgba(255,255,255,0.50)';
 
 export default function HomeScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, isTeenMode } = useApp();
   const { unreadCount } = useInbox();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
 
-  const moodLabel = MOODS.find(m => m.id === user?.mood)?.label ?? '';
-  const moodEmoji = MOODS.find(m => m.id === user?.mood)?.emoji ?? '😊';
-  const goalLabel = GOALS.find(g => g.id === user?.goal)?.label ?? '';
+  const moodLabel       = MOODS.find(m => m.id === user?.mood)?.label ?? '';
+  const moodEmoji       = MOODS.find(m => m.id === user?.mood)?.emoji ?? '😊';
+  const goalLabel       = GOALS.find(g => g.id === user?.goal)?.label ?? '';
   const personalityLabel = PERSONALITIES.find(p => p.id === user?.personality)?.label ?? '';
   const slug = user?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? '';
 
@@ -35,30 +39,36 @@ export default function HomeScreen() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={styles.container}
       contentContainerStyle={{ paddingBottom: 130 }}
       showsVerticalScrollIndicator={false}
     >
       <BlobBackground />
 
-      <LinearGradient colors={['#0B3C5D', '#1F6F8B']} style={[styles.header, { paddingTop: topPad + 20 }]}>
+      {/* ── Header ──────────────────────────────── */}
+      <LinearGradient
+        colors={['#0B0B0F', '#150A1E']}
+        style={[styles.header, { paddingTop: topPad + 20 }]}
+      >
         <View style={styles.headerRow}>
           <View>
-            <Text style={[styles.greeting, { fontFamily: 'Inter_400Regular' }]}>Welcome back 👋</Text>
-            <Text style={[styles.username, { fontFamily: 'Poppins_700Bold' }]}>{user?.username}</Text>
+            <Text style={styles.greeting}>Welcome back 👋</Text>
+            <Text style={styles.username}>{user?.username}</Text>
           </View>
           {user && <AvatarDisplay iconIndex={user.iconIndex} colorIndex={user.colorIndex} size={50} showRing />}
         </View>
+
         <View style={styles.chipsRow}>
-          <View style={[styles.chip, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+          <View style={styles.chip}>
             <Text style={styles.chipText}>{moodEmoji} {moodLabel}</Text>
           </View>
           {isTeenMode && (
-            <View style={[styles.chip, { backgroundColor: 'rgba(76,175,80,0.25)' }]}>
-              <Text style={styles.chipText}>🌱 Teen Mode</Text>
+            <View style={[styles.chip, { borderColor: 'rgba(0,255,136,0.35)', backgroundColor: 'rgba(0,255,136,0.08)' }]}>
+              <Text style={[styles.chipText, { color: GREEN }]}>🌱 Teen Mode</Text>
             </View>
           )}
         </View>
+
         <View style={styles.statsRow}>
           {[
             { label: 'Conversations', value: user?.totalChats ?? 0 },
@@ -66,10 +76,10 @@ export default function HomeScreen() {
             { label: 'Streak', value: user?.positiveStreak ?? 0 },
           ].map((stat, i) => (
             <React.Fragment key={stat.label}>
-              {i > 0 && <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />}
+              {i > 0 && <View style={styles.statDivider} />}
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { fontFamily: 'Poppins_700Bold' }]}>{stat.value}</Text>
-                <Text style={[styles.statLabel, { fontFamily: 'Inter_400Regular' }]}>{stat.label}</Text>
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
               </View>
             </React.Fragment>
           ))}
@@ -77,139 +87,151 @@ export default function HomeScreen() {
       </LinearGradient>
 
       <View style={styles.content}>
+
+        {/* ── Find Match ───────────────────────── */}
         <Animated.View entering={FadeInDown.delay(80).springify()}>
-          <TouchableOpacity onPress={handleFindMatch} activeOpacity={0.88} style={[styles.matchBtn, { borderRadius: colors.radius + 4 }]}>
-            <LinearGradient colors={['#4CAF50', '#2E7D32']} style={styles.matchGrad}>
-              <Text style={styles.matchEmoji}>🤝</Text>
+          <TouchableOpacity onPress={handleFindMatch} activeOpacity={0.88} style={styles.matchBtnWrap}>
+            <LinearGradient
+              colors={colors.gradPrimary}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={styles.matchBtn}
+            >
+              <Text style={{ fontSize: 34 }}>🤝</Text>
               <View>
-                <Text style={[styles.matchTitle, { fontFamily: 'Poppins_700Bold' }]}>Find Someone to Talk To</Text>
-                <Text style={[styles.matchSub, { fontFamily: 'Inter_400Regular' }]}>Smart matching by mood, goals & interests</Text>
+                <Text style={styles.matchTitle}>Find Someone to Talk To</Text>
+                <Text style={styles.matchSub}>Smart matching by mood, goals & interests</Text>
               </View>
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
 
+        {/* ── BridgeGuide AI ───────────────────── */}
         <Animated.View entering={FadeInDown.delay(140).springify()}>
-          <TouchableOpacity onPress={() => router.push('/bridge-guide')} activeOpacity={0.88} style={[styles.aiCard, { borderRadius: colors.radius + 4, overflow: 'hidden' as const }]}>
-            <LinearGradient colors={['#6C63FF', '#A29BFE']} style={styles.aiGrad}>
+          <TouchableOpacity
+            onPress={() => router.push('/bridge-guide')}
+            activeOpacity={0.88}
+            style={styles.aiCardWrap}
+          >
+            <LinearGradient
+              colors={['#1A0B2E', '#2D1554']}
+              style={styles.aiCard}
+            >
               <View style={styles.aiLeft}>
-                <View style={styles.aiAvatarWrap}>
+                <View style={styles.aiIconWrap}>
                   <Text style={{ fontSize: 28 }}>✨</Text>
                 </View>
                 <View style={styles.aiInfo}>
-                  <Text style={[styles.aiName, { fontFamily: 'Poppins_700Bold' }]}>BridgeGuide AI</Text>
-                  <Text style={[styles.aiTagline, { fontFamily: 'Inter_400Regular' }]}>Career · Study · Habits · Culture · Chat</Text>
+                  <Text style={styles.aiName}>BridgeGuide AI</Text>
+                  <Text style={styles.aiTagline}>Career · Study · Habits · Culture · Chat</Text>
                   <View style={styles.aiChipsRow}>
                     {['💼 Skills', '🎓 Education', '🚀 Growth', '💬 Starters'].map(c => (
                       <View key={c} style={styles.aiChip}>
-                        <Text style={[styles.aiChipText, { fontFamily: 'Inter_400Regular' }]}>{c}</Text>
+                        <Text style={styles.aiChipText}>{c}</Text>
                       </View>
                     ))}
                   </View>
                 </View>
               </View>
-              <View style={[styles.aiArrow, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                <Text style={{ fontSize: 18 }}>›</Text>
+              <View style={styles.aiArrow}>
+                <Text style={{ color: PINK, fontSize: 20 }}>›</Text>
               </View>
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
 
+        {/* ── Anonymous Inbox ──────────────────── */}
         <Animated.View entering={FadeInDown.delay(200).springify()}>
-          <GlassCard style={styles.inboxCard} padding={16}>
+          <GlassCard padding={16} style={styles.inboxCard}>
             <View style={styles.inboxTop}>
               <View style={styles.inboxLeft}>
                 <Text style={{ fontSize: 24 }}>📬</Text>
                 <View>
-                  <Text style={[styles.inboxTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>Anonymous Inbox</Text>
-                  <Text style={[styles.inboxSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-                    {unreadCount > 0 ? `${unreadCount} new message${unreadCount > 1 ? 's' : ''}` : 'Share your link and receive messages'}
+                  <Text style={styles.inboxTitle}>Anonymous Inbox</Text>
+                  <Text style={styles.inboxSub}>
+                    {unreadCount > 0 ? `${unreadCount} new message${unreadCount > 1 ? 's' : ''}` : 'Share your link & receive messages'}
                   </Text>
                 </View>
               </View>
               {unreadCount > 0 && (
-                <View style={[styles.inboxBadge, { backgroundColor: colors.accent }]}>
+                <View style={styles.inboxBadge}>
                   <Text style={styles.inboxBadgeText}>{unreadCount}</Text>
                 </View>
               )}
             </View>
-            <View style={[styles.linkPreview, { backgroundColor: colors.lavenderLight, borderRadius: 8 }]}>
+
+            <View style={styles.linkPreview}>
               <Text style={{ fontSize: 13 }}>🔗</Text>
-              <Text style={[styles.linkText, { color: colors.accent, fontFamily: 'Inter_400Regular' }]} numberOfLines={1}>
-                mindbridge.app/message/{slug}
-              </Text>
+              <Text style={styles.linkText} numberOfLines={1}>mindbridge.app/message/{slug}</Text>
             </View>
+
             <View style={styles.inboxActions}>
               <TouchableOpacity
                 onPress={() => router.push('/(tabs)/inbox')}
-                style={[styles.inboxBtn, { backgroundColor: colors.lavenderLight, borderRadius: 8, flex: 1 }]}
+                style={styles.inboxBtnOutline}
               >
-                <Text style={[styles.inboxBtnText, { color: colors.accent, fontFamily: 'Inter_600SemiBold' }]}>Open Inbox</Text>
+                <Text style={styles.inboxBtnOutlineText}>Open Inbox</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => router.push({ pathname: '/send-message', params: { slug } })}
-                style={[styles.inboxBtn, { backgroundColor: colors.accent, borderRadius: 8, flex: 1 }]}
+                style={styles.inboxBtnFill}
               >
-                <Text style={[styles.inboxBtnText, { color: '#FFFFFF', fontFamily: 'Inter_600SemiBold' }]}>📤 Share Link</Text>
+                <LinearGradient colors={colors.gradPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.inboxBtnGrad}>
+                  <Text style={styles.inboxBtnFillText}>📤 Share Link</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </GlassCard>
         </Animated.View>
 
+        {/* ── Profile Summary ──────────────────── */}
         <Animated.View entering={FadeInDown.delay(260).springify()}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>Your Profile Summary</Text>
-          <GlassCard style={styles.profileCard}>
-            <View style={styles.profileRow}>
-              <Text style={styles.profileEmoji}>{moodEmoji}</Text>
-              <View style={styles.profileInfo}>
-                <Text style={[styles.profileLabel, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>Current mood</Text>
-                <Text style={[styles.profileValue, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>{moodLabel || '—'}</Text>
+          <Text style={styles.sectionTitle}>YOUR PROFILE</Text>
+          <GlassCard padding={0} style={{ overflow: 'hidden' as const }}>
+            {[
+              { emoji: moodEmoji, label: 'Current mood', value: moodLabel || '—' },
+              { emoji: '🎯', label: 'Conversation goal', value: goalLabel || '—' },
+              { emoji: '🌊', label: 'Personality', value: personalityLabel || '—' },
+            ].map((row, i, arr) => (
+              <View key={row.label} style={[styles.profileRow, i < arr.length - 1 && styles.profileDivider]}>
+                <Text style={{ fontSize: 22 }}>{row.emoji}</Text>
+                <View style={styles.profileInfo}>
+                  <Text style={styles.profileLabel}>{row.label}</Text>
+                  <Text style={styles.profileValue}>{row.value}</Text>
+                </View>
               </View>
-            </View>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <View style={styles.profileRow}>
-              <Text style={styles.profileEmoji}>🎯</Text>
-              <View style={styles.profileInfo}>
-                <Text style={[styles.profileLabel, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>Conversation goal</Text>
-                <Text style={[styles.profileValue, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>{goalLabel || '—'}</Text>
-              </View>
-            </View>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <View style={styles.profileRow}>
-              <Text style={styles.profileEmoji}>🌊</Text>
-              <View style={styles.profileInfo}>
-                <Text style={[styles.profileLabel, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>Personality</Text>
-                <Text style={[styles.profileValue, { color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>{personalityLabel || '—'}</Text>
-              </View>
-            </View>
+            ))}
           </GlassCard>
         </Animated.View>
 
+        {/* ── Quick Access ──────────────────────── */}
         <Animated.View entering={FadeInDown.delay(300).springify()}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>Quick Access</Text>
+          <Text style={styles.sectionTitle}>QUICK ACCESS</Text>
           <View style={styles.quickGrid}>
             {[
-              { emoji: '🛡️', label: 'Safety Center', color: colors.safeGreenLight, textColor: colors.safeGreen, route: '/safety' },
-              { emoji: '🌟', label: 'My Badges', color: colors.lavenderLight, textColor: colors.accent, route: '/(tabs)/badges' },
-              { emoji: '⚙️', label: 'Admin Panel', color: '#FFF3E0', textColor: '#E65100', route: '/admin' },
-              { emoji: '📝', label: 'Feedback', color: '#F0FFF4', textColor: colors.safeGreen, route: '/feedback' },
+              { emoji: '🛡️', label: 'Safety Center',  bg: 'rgba(0,255,136,0.08)', col: GREEN,   route: '/safety'          },
+              { emoji: '🌟', label: 'My Badges',       bg: 'rgba(255,45,149,0.08)', col: PINK,   route: '/(tabs)/badges'   },
+              { emoji: '⚙️', label: 'Admin Panel',     bg: 'rgba(0,212,255,0.08)', col: CYAN,    route: '/admin'           },
+              { emoji: '📝', label: 'Feedback',        bg: 'rgba(255,255,255,0.05)', col: MUTED, route: '/feedback'        },
             ].map(item => (
               <TouchableOpacity
                 key={item.label}
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(item.route as any); }}
-                style={[styles.quickItem, { backgroundColor: item.color, borderRadius: colors.radius - 4 }]}
+                style={[styles.quickItem, {
+                  backgroundColor: item.bg,
+                  borderColor: item.col + '30',
+                }]}
               >
                 <Text style={{ fontSize: 22 }}>{item.emoji}</Text>
-                <Text style={[styles.quickItemText, { color: item.textColor, fontFamily: 'Inter_500Medium' }]}>{item.label}</Text>
+                <Text style={[styles.quickItemText, { color: item.col }]}>{item.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(340).springify()}>
-          <GlassCard style={styles.safetyNote} padding={14}>
+          <GlassCard padding={14} style={styles.safetyNote}>
             <Text style={{ fontSize: 15 }}>🛡️</Text>
-            <Text style={[styles.safetyText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            <Text style={styles.safetyText}>
               MindBridge is not a therapy or crisis service. If you are in immediate danger, contact emergency services.
             </Text>
           </GlassCard>
@@ -220,62 +242,85 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
+  container: { flex: 1, backgroundColor: '#050505' },
+  header: { paddingHorizontal: 20, paddingBottom: 24, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  greeting: { color: 'rgba(255,255,255,0.7)', fontSize: 13 },
-  username: { color: '#FFFFFF', fontSize: 22 },
+  greeting: { color: MUTED, fontSize: 13, fontFamily: 'Inter_400Regular' },
+  username: { color: '#FFFFFF', fontSize: 22, fontFamily: 'SpaceGrotesk_700Bold' },
   chipsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  chip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
-  chipText: { color: 'rgba(255,255,255,0.9)', fontSize: 13 },
+  chip: {
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(255,45,149,0.30)', backgroundColor: 'rgba(255,45,149,0.08)',
+  },
+  chipText: { color: PINK, fontSize: 13, fontFamily: 'Inter_500Medium' },
   statsRow: { flexDirection: 'row', alignItems: 'center' },
   statItem: { flex: 1, alignItems: 'center' },
-  statValue: { color: '#FFFFFF', fontSize: 24 },
-  statLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 11, marginTop: 2 },
-  statDivider: { width: 1, height: 30 },
+  statValue: { color: '#FFFFFF', fontSize: 24, fontFamily: 'SpaceGrotesk_700Bold' },
+  statLabel: { color: MUTED, fontSize: 11, marginTop: 2, fontFamily: 'Inter_400Regular' },
+  statDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.10)' },
+
   content: { padding: 20, gap: 16 },
-  matchBtn: { overflow: 'hidden' as const },
-  matchGrad: { flexDirection: 'row', alignItems: 'center', padding: 20, gap: 16 },
-  matchEmoji: { fontSize: 36 },
-  matchTitle: { color: '#FFFFFF', fontSize: 18 },
-  matchSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 3 },
-  aiCard: {},
-  aiGrad: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
-  aiLeft: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  aiAvatarWrap: {
-    width: 52, height: 52, borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center',
+  sectionTitle: { color: MUTED, fontSize: 11, fontFamily: 'SpaceGrotesk_600SemiBold', letterSpacing: 2, marginBottom: 8 },
+
+  matchBtnWrap: {
+    borderRadius: 20, overflow: 'hidden' as const,
+    shadowColor: PINK, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.40, shadowRadius: 20, elevation: 10,
   },
-  aiInfo: { flex: 1, gap: 4 },
-  aiName: { color: '#FFFFFF', fontSize: 17 },
-  aiTagline: { color: 'rgba(255,255,255,0.75)', fontSize: 12 },
-  aiChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 2 },
-  aiChip: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
-  aiChipText: { color: '#FFFFFF', fontSize: 11 },
-  aiArrow: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  matchBtn: { flexDirection: 'row', alignItems: 'center', padding: 20, gap: 16 },
+  matchTitle: { color: '#FFFFFF', fontSize: 17, fontFamily: 'SpaceGrotesk_700Bold' },
+  matchSub: { color: 'rgba(255,255,255,0.70)', fontSize: 12, marginTop: 3, fontFamily: 'Inter_400Regular' },
+
+  aiCardWrap: { borderRadius: 20, overflow: 'hidden' as const, borderWidth: 1, borderColor: 'rgba(123,44,255,0.30)' },
+  aiCard: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
+  aiLeft: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  aiIconWrap: {
+    width: 50, height: 50, borderRadius: 25,
+    backgroundColor: 'rgba(123,44,255,0.25)', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(123,44,255,0.40)',
+  },
+  aiInfo: { flex: 1, gap: 3 },
+  aiName: { color: '#FFFFFF', fontSize: 16, fontFamily: 'SpaceGrotesk_700Bold' },
+  aiTagline: { color: MUTED, fontSize: 12, fontFamily: 'Inter_400Regular' },
+  aiChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
+  aiChip: { backgroundColor: 'rgba(255,45,149,0.15)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
+  aiChipText: { color: PINK, fontSize: 11, fontFamily: 'Inter_500Medium' },
+  aiArrow: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,45,149,0.12)' },
+
   inboxCard: { gap: 12 },
   inboxTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   inboxLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  inboxTitle: { fontSize: 15 },
-  inboxSub: { fontSize: 12, marginTop: 2 },
-  inboxBadge: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  inboxTitle: { color: '#FFFFFF', fontSize: 15, fontFamily: 'SpaceGrotesk_600SemiBold' },
+  inboxSub: { color: MUTED, fontSize: 12, marginTop: 2, fontFamily: 'Inter_400Regular' },
+  inboxBadge: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: PINK },
   inboxBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' as const },
-  linkPreview: { flexDirection: 'row', alignItems: 'center', padding: 10, gap: 7 },
-  linkText: { flex: 1, fontSize: 12 },
+  linkPreview: {
+    flexDirection: 'row', alignItems: 'center', padding: 10, gap: 7,
+    backgroundColor: 'rgba(0,212,255,0.08)', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(0,212,255,0.20)',
+  },
+  linkText: { flex: 1, fontSize: 12, color: CYAN, fontFamily: 'Inter_400Regular' },
   inboxActions: { flexDirection: 'row', gap: 10 },
-  inboxBtn: { paddingVertical: 11, alignItems: 'center' },
-  inboxBtnText: { fontSize: 13 },
-  sectionTitle: { fontSize: 17, marginBottom: 10 },
-  profileCard: { gap: 2 },
-  profileRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10 },
-  profileEmoji: { fontSize: 22, width: 30, textAlign: 'center' },
+  inboxBtnOutline: {
+    flex: 1, paddingVertical: 11, alignItems: 'center',
+    borderRadius: 12, borderWidth: 1.5, borderColor: CYAN, backgroundColor: 'rgba(0,212,255,0.06)',
+  },
+  inboxBtnOutlineText: { color: CYAN, fontSize: 13, fontFamily: 'SpaceGrotesk_600SemiBold' },
+  inboxBtnFill: { flex: 1, borderRadius: 12, overflow: 'hidden' as const },
+  inboxBtnGrad: { paddingVertical: 11, alignItems: 'center' },
+  inboxBtnFillText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'SpaceGrotesk_600SemiBold' },
+
+  profileRow: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 },
+  profileDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.07)' },
   profileInfo: { flex: 1 },
-  profileLabel: { fontSize: 11, marginBottom: 2 },
-  profileValue: { fontSize: 14 },
-  divider: { height: StyleSheet.hairlineWidth },
+  profileLabel: { color: MUTED, fontSize: 11, marginBottom: 2, fontFamily: 'Inter_400Regular' },
+  profileValue: { color: '#FFFFFF', fontSize: 14, fontFamily: 'Inter_600SemiBold' },
+
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  quickItem: { width: '47%', flexDirection: 'row', alignItems: 'center', padding: 14, gap: 10 },
-  quickItemText: { fontSize: 13 },
+  quickItem: {
+    width: '47%', flexDirection: 'row', alignItems: 'center', padding: 14, gap: 10,
+    borderRadius: 16, borderWidth: 1,
+  },
+  quickItemText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+
   safetyNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  safetyText: { flex: 1, fontSize: 12, lineHeight: 18 },
+  safetyText: { flex: 1, color: MUTED, fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular' },
 });

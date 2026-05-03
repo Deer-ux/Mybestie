@@ -10,38 +10,43 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
-import { useColors } from '@/hooks/useColors';
 import AvatarDisplay from '@/components/AvatarDisplay';
-import BlobBackground from '@/components/BlobBackground';
 import {
   AGE_GROUPS, MOODS, GOALS, PERSONALITIES, TEMPERAMENTS,
   AVATAR_ICON_NAMES, AVATAR_COLOR_OPTIONS, generateUsername,
   getInterestsForAge,
 } from '@/utils/helpers';
+import colors from '@/constants/colors';
 
 const STEPS = ['Age', 'Mood', 'Goal', 'Topics', 'Personality', 'Temperament', 'Avatar'];
 
+const PINK  = '#FF2D95';
+const CYAN  = '#00D4FF';
+const MUTED = 'rgba(255,255,255,0.50)';
+const BG    = '#050505';
+const CARD  = 'rgba(255,255,255,0.05)';
+const CBORDER = 'rgba(255,255,255,0.09)';
+
 export default function OnboardingScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, completeOnboarding } = useApp();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const [step, setStep] = useState(0);
-  const [ageGroup, setAgeGroup] = useState('');
-  const [mood, setMood] = useState('');
-  const [goal, setGoal] = useState('');
-  const [interests, setInterests] = useState<string[]>([]);
+  const [step, setStep]             = useState(0);
+  const [ageGroup, setAgeGroup]     = useState('');
+  const [mood, setMood]             = useState('');
+  const [goal, setGoal]             = useState('');
+  const [interests, setInterests]   = useState<string[]>([]);
   const [personality, setPersonality] = useState('');
   const [temperament, setTemperament] = useState('');
-  const [username, setUsername] = useState(user?.username ?? generateUsername());
-  const [iconIndex, setIconIndex] = useState(user?.iconIndex ?? 0);
+  const [username, setUsername]     = useState(user?.username ?? generateUsername());
+  const [iconIndex, setIconIndex]   = useState(user?.iconIndex ?? 0);
   const [colorIndex, setColorIndex] = useState(user?.colorIndex ?? 0);
   const [ageBlocked, setAgeBlocked] = useState(false);
 
-  const isTeenMode = ageGroup === 'teen';
-  const availableInterests = getInterestsForAge(isTeenMode);
+  const isTeenMode          = ageGroup === 'teen';
+  const availableInterests  = getInterestsForAge(isTeenMode);
 
   function tap() { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
 
@@ -77,301 +82,290 @@ export default function OnboardingScreen() {
   const progress = ((step + 1) / STEPS.length) * 100;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <BlobBackground variant="purple" />
-
-      <LinearGradient colors={['#0B3C5D', '#1F6F8B']} style={[styles.topBar, { paddingTop: topPad + 10 }]}>
-        <View style={styles.progressRow}>
+    <View style={styles.container}>
+      {/* Top bar */}
+      <View style={[styles.topBar, { paddingTop: topPad + 10 }]}>
+        <View style={styles.progressDotsRow}>
           {STEPS.map((_, i) => (
-            <View key={i} style={[styles.progDot, { backgroundColor: i <= step ? '#FFFFFF' : 'rgba(255,255,255,0.3)' }]} />
+            <View
+              key={i}
+              style={[styles.progDot, {
+                backgroundColor: i < step ? PINK : i === step ? PINK : 'rgba(255,255,255,0.18)',
+                width: i === step ? 20 : 8,
+              }]}
+            />
           ))}
         </View>
-        <View style={styles.topBarBottom}>
-          <Text style={[styles.stepName, { fontFamily: 'Poppins_600SemiBold' }]}>
-            Step {step + 1}: {STEPS[step]}
-          </Text>
-          <Text style={[styles.stepCount, { fontFamily: 'Inter_400Regular' }]}>
-            {step + 1}/{STEPS.length}
-          </Text>
+        <View style={styles.topBarMeta}>
+          <Text style={styles.stepLabel}>Step {step + 1}: {STEPS[step]}</Text>
+          <Text style={styles.stepCount}>{step + 1} / {STEPS.length}</Text>
         </View>
-        <View style={[styles.progBar, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-          <View style={[styles.progFill, { width: `${progress}%` as any }]} />
+        {/* Progress bar */}
+        <View style={styles.progBarBg}>
+          <LinearGradient
+            colors={colors.gradPrimary}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={[styles.progBarFill, { width: `${progress}%` as any }]}
+          />
         </View>
-      </LinearGradient>
+      </View>
 
+      {/* Content */}
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: botPad + 110 }]}
+        contentContainerStyle={{ paddingTop: 24, paddingHorizontal: 20, paddingBottom: botPad + 120, gap: 20 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* Step 0 — Age gate */}
         {step === 0 && (
           <Animated.View entering={FadeInRight} style={styles.stepWrap}>
-            <Text style={[styles.stepTitle, { color: colors.primary, fontFamily: 'Poppins_700Bold' }]}>
-              Let's keep it safe
-            </Text>
-            <Text style={[styles.stepSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-              MindBridge separates teen and adult spaces to keep all conversations safer.
-            </Text>
-            <View style={[styles.safetyNote, { backgroundColor: colors.safeGreenLight, borderRadius: colors.radius }]}>
-              <Text style={{ fontSize: 18 }}>🛡️</Text>
-              <Text style={[styles.safetyNoteText, { color: colors.safeGreen, fontFamily: 'Inter_500Medium' }]}>
-                Teen users are matched only with other teens. Adults are matched only with adults.
-              </Text>
+            <Text style={styles.stepTitle}>Let's keep it safe 🛡️</Text>
+            <Text style={styles.stepSub}>MindBridge separates teen and adult spaces for safer conversations.</Text>
+            <View style={styles.safetyNote}>
+              <Text style={{ fontSize: 16 }}>🛡️</Text>
+              <Text style={styles.safetyNoteText}>Teens are only matched with teens. Adults only with adults.</Text>
             </View>
-            {AGE_GROUPS.map(g => (
-              <TouchableOpacity
-                key={g.id}
-                onPress={() => handleAgeSelect(g.id)}
-                style={[styles.ageCard, {
-                  backgroundColor: ageGroup === g.id
-                    ? (g.blocked ? '#FFF0F0' : colors.lavenderLight)
-                    : colors.glass,
-                  borderColor: ageGroup === g.id
-                    ? (g.blocked ? colors.destructive : colors.accent)
-                    : colors.glassBorder,
-                  borderRadius: colors.radius,
-                }]}
-              >
-                <Text style={styles.ageEmoji}>{g.emoji}</Text>
-                <View style={styles.ageInfo}>
-                  <Text style={[styles.ageLabel, { color: g.blocked && ageGroup === g.id ? colors.destructive : colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>
-                    {g.label}
-                  </Text>
-                  <Text style={[styles.ageSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{g.description}</Text>
-                </View>
-                {ageGroup === g.id && (
-                  <Ionicons name={g.blocked ? 'close-circle' : 'checkmark-circle'} size={22} color={g.blocked ? colors.destructive : colors.accent} />
-                )}
-              </TouchableOpacity>
-            ))}
+            {AGE_GROUPS.map(g => {
+              const active = ageGroup === g.id;
+              return (
+                <TouchableOpacity
+                  key={g.id}
+                  onPress={() => handleAgeSelect(g.id)}
+                  style={[styles.listCard, {
+                    borderColor: active ? (g.blocked ? '#FF4455' : PINK) : CBORDER,
+                    backgroundColor: active ? (g.blocked ? 'rgba(255,68,85,0.10)' : 'rgba(255,45,149,0.10)') : CARD,
+                  }]}
+                >
+                  <Text style={{ fontSize: 28 }}>{g.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.listLabel, { color: active && g.blocked ? '#FF4455' : '#FFFFFF' }]}>{g.label}</Text>
+                    <Text style={[styles.listSub]}>{g.description}</Text>
+                  </View>
+                  {active && <Ionicons name={g.blocked ? 'close-circle' : 'checkmark-circle'} size={22} color={g.blocked ? '#FF4455' : PINK} />}
+                </TouchableOpacity>
+              );
+            })}
             {ageBlocked && (
-              <View style={[styles.blockedCard, { backgroundColor: '#FFF0F0', borderRadius: colors.radius }]}>
-                <Text style={styles.blockedEmoji}>🚫</Text>
-                <Text style={[styles.blockedText, { color: colors.destructive, fontFamily: 'Inter_500Medium' }]}>
-                  MindBridge is only available for users aged 13 and above. We care about keeping younger children safe online.
-                </Text>
+              <View style={[styles.blockedCard]}>
+                <Text style={{ fontSize: 22 }}>🚫</Text>
+                <Text style={styles.blockedText}>MindBridge is only available for users aged 13 and above.</Text>
               </View>
             )}
           </Animated.View>
         )}
 
+        {/* Step 1 — Mood */}
         {step === 1 && (
           <Animated.View entering={FadeInRight} style={styles.stepWrap}>
-            <Text style={[styles.stepTitle, { color: colors.primary, fontFamily: 'Poppins_700Bold' }]}>
-              How are you feeling right now?
-            </Text>
-            <Text style={[styles.stepSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-              This helps us find someone who complements your current mood.
-            </Text>
+            <Text style={styles.stepTitle}>How are you feeling? 💫</Text>
+            <Text style={styles.stepSub}>This helps us find someone who complements your current mood.</Text>
             <View style={styles.emojiGrid}>
-              {MOODS.map(m => (
-                <TouchableOpacity
-                  key={m.id}
-                  onPress={() => { tap(); setMood(m.id); }}
-                  style={[styles.emojiCard, {
-                    backgroundColor: mood === m.id ? colors.lavenderLight : colors.glass,
-                    borderColor: mood === m.id ? colors.accent : colors.glassBorder,
-                    borderRadius: colors.radius,
-                  }]}
-                >
-                  <Text style={styles.cardEmoji}>{m.emoji}</Text>
-                  <Text style={[styles.cardLabel, { color: mood === m.id ? colors.accent : colors.foreground, fontFamily: 'Inter_500Medium' }]}>{m.label}</Text>
-                </TouchableOpacity>
-              ))}
+              {MOODS.map(m => {
+                const active = mood === m.id;
+                return (
+                  <TouchableOpacity
+                    key={m.id}
+                    onPress={() => { tap(); setMood(m.id); }}
+                    style={[styles.emojiCard, {
+                      borderColor: active ? PINK : CBORDER,
+                      backgroundColor: active ? 'rgba(255,45,149,0.12)' : CARD,
+                    }]}
+                  >
+                    <Text style={{ fontSize: 28 }}>{m.emoji}</Text>
+                    <Text style={[styles.cardLabel, { color: active ? PINK : '#FFFFFF' }]}>{m.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </Animated.View>
         )}
 
+        {/* Step 2 — Goal */}
         {step === 2 && (
           <Animated.View entering={FadeInRight} style={styles.stepWrap}>
-            <Text style={[styles.stepTitle, { color: colors.primary, fontFamily: 'Poppins_700Bold' }]}>
-              What brings you here?
-            </Text>
-            <Text style={[styles.stepSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-              Your conversation goal helps us find the right match.
-            </Text>
-            {GOALS.map(g => (
-              <TouchableOpacity
-                key={g.id}
-                onPress={() => { tap(); setGoal(g.id); }}
-                style={[styles.listCard, {
-                  backgroundColor: goal === g.id ? colors.lavenderLight : colors.glass,
-                  borderColor: goal === g.id ? colors.accent : colors.glassBorder,
-                  borderRadius: colors.radius,
-                }]}
-              >
-                <Text style={styles.listEmoji}>{g.emoji}</Text>
-                <Text style={[styles.listLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium' }]}>{g.label}</Text>
-                {goal === g.id && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
-              </TouchableOpacity>
-            ))}
+            <Text style={styles.stepTitle}>What brings you here? 🎯</Text>
+            <Text style={styles.stepSub}>Your conversation goal helps us find the right match.</Text>
+            {GOALS.map(g => {
+              const active = goal === g.id;
+              return (
+                <TouchableOpacity
+                  key={g.id}
+                  onPress={() => { tap(); setGoal(g.id); }}
+                  style={[styles.listCard, {
+                    borderColor: active ? PINK : CBORDER,
+                    backgroundColor: active ? 'rgba(255,45,149,0.10)' : CARD,
+                  }]}
+                >
+                  <Text style={{ fontSize: 22 }}>{g.emoji}</Text>
+                  <Text style={[styles.listLabel, { flex: 1, color: active ? PINK : '#FFFFFF' }]}>{g.label}</Text>
+                  {active && <Ionicons name="checkmark-circle" size={20} color={PINK} />}
+                </TouchableOpacity>
+              );
+            })}
           </Animated.View>
         )}
 
+        {/* Step 3 — Topics */}
         {step === 3 && (
           <Animated.View entering={FadeInRight} style={styles.stepWrap}>
-            <Text style={[styles.stepTitle, { color: colors.primary, fontFamily: 'Poppins_700Bold' }]}>
-              What topics interest you?
-            </Text>
-            <Text style={[styles.stepSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-              Pick at least one. Choose as many as you like.
-              {isTeenMode && ' (Some adult topics are not available in Teen Mode.)'}
-            </Text>
+            <Text style={styles.stepTitle}>What topics interest you? ✨</Text>
+            <Text style={styles.stepSub}>Pick at least one.{isTeenMode ? ' (Some adult topics are hidden in Teen Mode.)' : ''}</Text>
             <View style={styles.tagGrid}>
-              {availableInterests.map(interest => (
-                <TouchableOpacity
-                  key={interest.id}
-                  onPress={() => toggleInterest(interest.id)}
-                  style={[styles.tag, {
-                    backgroundColor: interests.includes(interest.id) ? colors.accent : colors.glass,
-                    borderColor: interests.includes(interest.id) ? colors.accent : colors.glassBorder,
-                    borderRadius: 20,
-                  }]}
-                >
-                  <Text style={{ fontSize: 15 }}>{interest.emoji}</Text>
-                  <Text style={[styles.tagText, { color: interests.includes(interest.id) ? '#FFFFFF' : colors.foreground, fontFamily: 'Inter_500Medium' }]}>
-                    {interest.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {availableInterests.map(interest => {
+                const active = interests.includes(interest.id);
+                return (
+                  <TouchableOpacity
+                    key={interest.id}
+                    onPress={() => toggleInterest(interest.id)}
+                    style={[styles.tag, {
+                      backgroundColor: active ? PINK : CARD,
+                      borderColor: active ? PINK : CBORDER,
+                    }]}
+                  >
+                    <Text style={{ fontSize: 15 }}>{interest.emoji}</Text>
+                    <Text style={[styles.tagText, { color: active ? '#FFFFFF' : 'rgba(255,255,255,0.75)' }]}>
+                      {interest.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </Animated.View>
         )}
 
+        {/* Step 4 — Personality */}
         {step === 4 && (
           <Animated.View entering={FadeInRight} style={styles.stepWrap}>
-            <Text style={[styles.stepTitle, { color: colors.primary, fontFamily: 'Poppins_700Bold' }]}>
-              How do you connect?
-            </Text>
-            <Text style={[styles.stepSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-              Select your personality style.
-            </Text>
+            <Text style={styles.stepTitle}>How do you connect? 🌊</Text>
+            <Text style={styles.stepSub}>Select your personality style.</Text>
             <View style={styles.emojiGrid}>
-              {PERSONALITIES.map(p => (
-                <TouchableOpacity
-                  key={p.id}
-                  onPress={() => { tap(); setPersonality(p.id); }}
-                  style={[styles.emojiCard, {
-                    backgroundColor: personality === p.id ? colors.lavenderLight : colors.glass,
-                    borderColor: personality === p.id ? colors.accent : colors.glassBorder,
-                    borderRadius: colors.radius,
-                  }]}
-                >
-                  <Text style={styles.cardEmoji}>{p.emoji}</Text>
-                  <Text style={[styles.cardLabel, { color: personality === p.id ? colors.accent : colors.foreground, fontFamily: 'Inter_500Medium' }]}>{p.label}</Text>
-                </TouchableOpacity>
-              ))}
+              {PERSONALITIES.map(p => {
+                const active = personality === p.id;
+                return (
+                  <TouchableOpacity
+                    key={p.id}
+                    onPress={() => { tap(); setPersonality(p.id); }}
+                    style={[styles.emojiCard, {
+                      borderColor: active ? PINK : CBORDER,
+                      backgroundColor: active ? 'rgba(255,45,149,0.12)' : CARD,
+                    }]}
+                  >
+                    <Text style={{ fontSize: 28 }}>{p.emoji}</Text>
+                    <Text style={[styles.cardLabel, { color: active ? PINK : '#FFFFFF' }]}>{p.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </Animated.View>
         )}
 
+        {/* Step 5 — Temperament */}
         {step === 5 && (
           <Animated.View entering={FadeInRight} style={styles.stepWrap}>
-            <Text style={[styles.stepTitle, { color: colors.primary, fontFamily: 'Poppins_700Bold' }]}>
-              Your communication style
-            </Text>
-            <Text style={[styles.stepSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-              How do you naturally approach conversations?
-            </Text>
-            {TEMPERAMENTS.map(t => (
-              <TouchableOpacity
-                key={t.id}
-                onPress={() => { tap(); setTemperament(t.id); }}
-                style={[styles.listCard, {
-                  backgroundColor: temperament === t.id ? colors.lavenderLight : colors.glass,
-                  borderColor: temperament === t.id ? colors.accent : colors.glassBorder,
-                  borderRadius: colors.radius,
-                }]}
-              >
-                <Text style={styles.listEmoji}>{t.emoji}</Text>
-                <Text style={[styles.listLabel, { color: colors.foreground, fontFamily: 'Inter_500Medium' }]}>{t.label}</Text>
-                {temperament === t.id && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
-              </TouchableOpacity>
-            ))}
+            <Text style={styles.stepTitle}>Your communication style 💬</Text>
+            <Text style={styles.stepSub}>How do you naturally approach conversations?</Text>
+            {TEMPERAMENTS.map(t => {
+              const active = temperament === t.id;
+              return (
+                <TouchableOpacity
+                  key={t.id}
+                  onPress={() => { tap(); setTemperament(t.id); }}
+                  style={[styles.listCard, {
+                    borderColor: active ? PINK : CBORDER,
+                    backgroundColor: active ? 'rgba(255,45,149,0.10)' : CARD,
+                  }]}
+                >
+                  <Text style={{ fontSize: 22 }}>{t.emoji}</Text>
+                  <Text style={[styles.listLabel, { flex: 1, color: active ? PINK : '#FFFFFF' }]}>{t.label}</Text>
+                  {active && <Ionicons name="checkmark-circle" size={20} color={PINK} />}
+                </TouchableOpacity>
+              );
+            })}
           </Animated.View>
         )}
 
+        {/* Step 6 — Avatar */}
         {step === 6 && (
           <Animated.View entering={FadeInRight} style={styles.stepWrap}>
-            <Text style={[styles.stepTitle, { color: colors.primary, fontFamily: 'Poppins_700Bold' }]}>
-              Create your anonymous identity
-            </Text>
-            <Text style={[styles.stepSub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-              Your real identity is never shared. Pick an avatar and anonymous name.
-            </Text>
+            <Text style={styles.stepTitle}>Your anonymous identity 👤</Text>
+            <Text style={styles.stepSub}>Your real identity is never shared. Pick a name and avatar.</Text>
 
             <View style={styles.avatarPreview}>
-              <AvatarDisplay iconIndex={iconIndex} colorIndex={colorIndex} size={90} showRing />
-              <Text style={[styles.previewName, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>{username}</Text>
+              <AvatarDisplay iconIndex={iconIndex} colorIndex={colorIndex} size={88} showRing />
+              <Text style={styles.previewName}>{username}</Text>
               {isTeenMode && (
-                <View style={[styles.modeBadge, { backgroundColor: colors.safeGreenLight, borderRadius: 12 }]}>
-                  <Text style={styles.modeEmoji}>🌱</Text>
-                  <Text style={[styles.modeText, { color: colors.safeGreen, fontFamily: 'Inter_600SemiBold' }]}>Teen Mode</Text>
+                <View style={styles.modeBadge}>
+                  <Text style={{ fontSize: 13 }}>🌱</Text>
+                  <Text style={styles.modeText}>Teen Mode</Text>
                 </View>
               )}
             </View>
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>AVATAR COLOR</Text>
+            <Text style={styles.fieldLabel}>AVATAR COLOR</Text>
             <View style={styles.colorRow}>
               {AVATAR_COLOR_OPTIONS.map((c, i) => (
                 <TouchableOpacity
                   key={i}
                   onPress={() => { tap(); setColorIndex(i); }}
-                  style={[styles.colorDot, { backgroundColor: c, borderWidth: i === colorIndex ? 3 : 0, borderColor: colors.foreground }]}
+                  style={[styles.colorDot, { backgroundColor: c, borderWidth: i === colorIndex ? 3 : 0, borderColor: PINK }]}
                 />
               ))}
             </View>
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>AVATAR ICON</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.iconRow}>
+            <Text style={styles.fieldLabel}>AVATAR ICON</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
               {AVATAR_ICON_NAMES.map((icon, i) => (
                 <TouchableOpacity
                   key={i}
                   onPress={() => { tap(); setIconIndex(i); }}
                   style={[styles.iconOption, {
-                    backgroundColor: i === iconIndex ? colors.primary : colors.muted,
-                    borderRadius: 22,
+                    backgroundColor: i === iconIndex ? PINK : 'rgba(255,255,255,0.07)',
                   }]}
                 >
-                  <Ionicons name={icon as any} size={20} color={i === iconIndex ? '#FFFFFF' : colors.mutedForeground} />
+                  <Ionicons name={icon as any} size={20} color={i === iconIndex ? '#FFFFFF' : 'rgba(255,255,255,0.5)'} />
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }]}>USERNAME</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.glass, borderColor: colors.glassBorder, borderRadius: colors.radius }]}>
+            <Text style={styles.fieldLabel}>USERNAME</Text>
+            <View style={styles.inputRow}>
               <TextInput
-                style={[styles.input, { color: colors.foreground, fontFamily: 'Inter_500Medium' }]}
+                style={styles.input}
                 value={username}
                 onChangeText={setUsername}
                 maxLength={24}
                 placeholder="Your anonymous name"
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor={MUTED}
               />
-              <TouchableOpacity onPress={() => setUsername(generateUsername())} style={[styles.refreshBtn, { backgroundColor: colors.lavenderLight }]}>
-                <Ionicons name="refresh" size={18} color={colors.accent} />
+              <TouchableOpacity onPress={() => setUsername(generateUsername())} style={styles.refreshBtn}>
+                <Ionicons name="refresh" size={18} color={CYAN} />
               </TouchableOpacity>
             </View>
           </Animated.View>
         )}
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: botPad + 16, backgroundColor: colors.background, borderTopColor: colors.border }]}>
+      {/* Footer */}
+      <View style={[styles.footer, { paddingBottom: botPad + 16 }]}>
         {step > 0 && (
           <TouchableOpacity onPress={() => setStep(s => s - 1)} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={20} color={colors.mutedForeground} />
-            <Text style={[styles.backText, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>Back</Text>
+            <Ionicons name="chevron-back" size={20} color={MUTED} />
+            <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
           onPress={handleNext}
           disabled={!canAdvance()}
-          style={[styles.nextBtn, { borderRadius: colors.radius, opacity: canAdvance() ? 1 : 0.4 }]}
+          style={[styles.nextBtnWrap, { opacity: canAdvance() ? 1 : 0.35 }]}
         >
-          <LinearGradient colors={['#1F6F8B', '#0B3C5D']} style={styles.nextGrad}>
-            <Text style={[styles.nextText, { fontFamily: 'Inter_600SemiBold' }]}>
-              {step === STEPS.length - 1 ? '🚀  Start MindBridge' : 'Continue'}
+          <LinearGradient
+            colors={colors.gradPrimary}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={styles.nextBtn}
+          >
+            <Text style={styles.nextText}>
+              {step === STEPS.length - 1 ? '🚀  Enter MindBridge' : 'Continue'}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -381,70 +375,84 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  topBar: { paddingHorizontal: 20, paddingBottom: 16 },
-  progressRow: { flexDirection: 'row', gap: 5, marginBottom: 10 },
-  progDot: { flex: 1, height: 4, borderRadius: 2 },
-  topBarBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  stepName: { color: '#FFFFFF', fontSize: 13 },
-  stepCount: { color: 'rgba(255,255,255,0.65)', fontSize: 12 },
-  progBar: { height: 2, borderRadius: 1 },
-  progFill: { height: 2, backgroundColor: '#FFFFFF', borderRadius: 1 },
+  container: { flex: 1, backgroundColor: '#050505' },
+  topBar: { paddingHorizontal: 20, paddingBottom: 16, backgroundColor: '#0B0B0F', gap: 10 },
+  progressDotsRow: { flexDirection: 'row', gap: 5, alignItems: 'center' },
+  progDot: { height: 4, borderRadius: 2 },
+  topBarMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  stepLabel: { color: '#FFFFFF', fontSize: 13, fontFamily: 'SpaceGrotesk_600SemiBold' },
+  stepCount: { color: MUTED, fontSize: 12, fontFamily: 'Inter_400Regular' },
+  progBarBg: { height: 3, backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 2, overflow: 'hidden' as const },
+  progBarFill: { height: 3, borderRadius: 2 },
+
   scroll: { flex: 1 },
-  scrollContent: { paddingTop: 24, paddingHorizontal: 20, gap: 20 },
   stepWrap: { gap: 14 },
-  stepTitle: { fontSize: 24, lineHeight: 32 },
-  stepSub: { fontSize: 14, lineHeight: 20, color: '#6B7280' },
-  safetyNote: { flexDirection: 'row', padding: 14, gap: 10, alignItems: 'flex-start' },
-  safetyNoteText: { flex: 1, fontSize: 13, lineHeight: 19 },
-  ageCard: {
-    flexDirection: 'row', alignItems: 'center', padding: 16,
-    borderWidth: 1.5, gap: 14,
+  stepTitle: { fontSize: 24, color: '#FFFFFF', fontFamily: 'SpaceGrotesk_700Bold', lineHeight: 33 },
+  stepSub: { fontSize: 14, color: MUTED, fontFamily: 'Inter_400Regular', lineHeight: 20 },
+
+  safetyNote: {
+    flexDirection: 'row', padding: 14, gap: 10, alignItems: 'flex-start',
+    backgroundColor: 'rgba(0,255,136,0.08)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,255,136,0.18)',
   },
-  ageEmoji: { fontSize: 30 },
-  ageInfo: { flex: 1 },
-  ageLabel: { fontSize: 18, marginBottom: 3 },
-  ageSub: { fontSize: 13, lineHeight: 18 },
-  blockedCard: { flexDirection: 'row', padding: 16, gap: 12, alignItems: 'flex-start' },
-  blockedEmoji: { fontSize: 24 },
-  blockedText: { flex: 1, fontSize: 14, lineHeight: 20 },
+  safetyNoteText: { flex: 1, fontSize: 13, color: '#00FF88', fontFamily: 'Inter_500Medium', lineHeight: 19 },
+
+  listCard: {
+    flexDirection: 'row', alignItems: 'center', padding: 14, gap: 14,
+    borderWidth: 1.5, borderRadius: 16,
+  },
+  listLabel: { fontSize: 15, fontFamily: 'SpaceGrotesk_600SemiBold' },
+  listSub: { fontSize: 12, color: MUTED, fontFamily: 'Inter_400Regular', marginTop: 2 },
+
+  blockedCard: {
+    flexDirection: 'row', padding: 16, gap: 12, alignItems: 'flex-start',
+    backgroundColor: 'rgba(255,68,85,0.10)', borderRadius: 14,
+    borderWidth: 1, borderColor: 'rgba(255,68,85,0.25)',
+  },
+  blockedText: { flex: 1, fontSize: 14, color: '#FF4455', fontFamily: 'Inter_500Medium', lineHeight: 20 },
+
   emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   emojiCard: {
     width: '46%', flexGrow: 1, alignItems: 'center', paddingVertical: 16,
-    borderWidth: 1.5, gap: 8,
+    borderWidth: 1.5, borderRadius: 16, gap: 8,
   },
-  cardEmoji: { fontSize: 28 },
-  cardLabel: { fontSize: 13, textAlign: 'center' },
-  listCard: {
-    flexDirection: 'row', alignItems: 'center', padding: 14,
-    borderWidth: 1.5, gap: 14,
-  },
-  listEmoji: { fontSize: 22 },
-  listLabel: { flex: 1, fontSize: 15 },
+  cardLabel: { fontSize: 13, fontFamily: 'SpaceGrotesk_500Medium', textAlign: 'center' },
+
   tagGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tag: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1.5, gap: 6 },
-  tagText: { fontSize: 13 },
+  tag: {
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8,
+    borderWidth: 1.5, borderRadius: 20, gap: 6,
+  },
+  tagText: { fontSize: 13, fontFamily: 'Inter_500Medium' },
+
   avatarPreview: { alignItems: 'center', paddingVertical: 20, gap: 10 },
-  previewName: { fontSize: 20 },
-  modeBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 5, gap: 6 },
-  modeEmoji: { fontSize: 14 },
-  modeText: { fontSize: 13 },
-  fieldLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 4 },
+  previewName: { fontSize: 20, color: '#FFFFFF', fontFamily: 'SpaceGrotesk_600SemiBold' },
+  modeBadge: {
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 5,
+    backgroundColor: 'rgba(0,255,136,0.12)', borderRadius: 12, gap: 6,
+  },
+  modeText: { fontSize: 13, color: '#00FF88', fontFamily: 'Inter_600SemiBold' },
+
+  fieldLabel: { fontSize: 11, color: MUTED, fontFamily: 'SpaceGrotesk_600SemiBold', letterSpacing: 1.5, marginTop: 4 },
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   colorDot: { width: 34, height: 34, borderRadius: 17 },
-  iconRow: { marginBottom: 4 },
-  iconOption: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
-  inputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, overflow: 'hidden' as const },
-  input: { flex: 1, padding: 14, fontSize: 16 },
+  iconOption: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: 8, borderRadius: 22 },
+  inputRow: {
+    flexDirection: 'row', alignItems: 'center', borderWidth: 1.5,
+    borderColor: '#FF2D95', borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.06)', overflow: 'hidden' as const,
+  },
+  input: { flex: 1, padding: 14, fontSize: 16, color: '#FFFFFF', fontFamily: 'Inter_500Medium' },
   refreshBtn: { padding: 14 },
+
   footer: {
     paddingHorizontal: 20, paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    backgroundColor: '#0B0B0F',
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.08)',
     flexDirection: 'row', alignItems: 'center', gap: 12,
   },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backText: { fontSize: 14 },
-  nextBtn: { flex: 1, overflow: 'hidden' as const },
-  nextGrad: { paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
-  nextText: { color: '#FFFFFF', fontSize: 16 },
+  backText: { fontSize: 14, color: MUTED, fontFamily: 'Inter_500Medium' },
+  nextBtnWrap: { flex: 1, borderRadius: 20, overflow: 'hidden' as const },
+  nextBtn: { paddingVertical: 17, alignItems: 'center', justifyContent: 'center' },
+  nextText: { color: '#FFFFFF', fontSize: 16, fontFamily: 'SpaceGrotesk_700Bold' },
 });

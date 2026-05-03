@@ -6,27 +6,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
-import { useColors } from '@/hooks/useColors';
 import AvatarDisplay from '@/components/AvatarDisplay';
 import GlassCard from '@/components/GlassCard';
 import BlobBackground from '@/components/BlobBackground';
 import { MOODS, GOALS, PERSONALITIES, TEMPERAMENTS, AVATAR_ICON_NAMES, AVATAR_COLOR_OPTIONS } from '@/utils/helpers';
+import colors from '@/constants/colors';
+
+const PINK  = '#FF2D95';
+const CYAN  = '#00D4FF';
+const GREEN = '#00FF88';
+const MUTED = 'rgba(255,255,255,0.50)';
 
 export default function ProfileScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, updateUser, resetUser, isTeenMode } = useApp();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const [adminTaps, setAdminTaps] = useState(0);
 
-  function moodEmoji(id: string) { return MOODS.find(m => m.id === id)?.emoji ?? ''; }
-  function moodLabel(id: string) { return MOODS.find(m => m.id === id)?.label ?? id; }
-  function goalEmoji(id: string) { return GOALS.find(g => g.id === id)?.emoji ?? ''; }
-  function goalLabel(id: string) { return GOALS.find(g => g.id === id)?.label ?? id; }
-  function personalityEmoji(id: string) { return PERSONALITIES.find(p => p.id === id)?.emoji ?? ''; }
-  function personalityLabel(id: string) { return PERSONALITIES.find(p => p.id === id)?.label ?? id; }
-  function temperamentEmoji(id: string) { return TEMPERAMENTS.find(t => t.id === id)?.emoji ?? ''; }
-  function temperamentLabel(id: string) { return TEMPERAMENTS.find(t => t.id === id)?.label ?? id; }
+  const moodEmoji       = (id: string) => MOODS.find(m => m.id === id)?.emoji ?? '';
+  const moodLabel       = (id: string) => MOODS.find(m => m.id === id)?.label ?? id;
+  const goalEmoji       = (id: string) => GOALS.find(g => g.id === id)?.emoji ?? '';
+  const goalLabel       = (id: string) => GOALS.find(g => g.id === id)?.label ?? id;
+  const personalityEmoji = (id: string) => PERSONALITIES.find(p => p.id === id)?.emoji ?? '';
+  const personalityLabel = (id: string) => PERSONALITIES.find(p => p.id === id)?.label ?? id;
+  const temperamentEmoji = (id: string) => TEMPERAMENTS.find(t => t.id === id)?.emoji ?? '';
+  const temperamentLabel = (id: string) => TEMPERAMENTS.find(t => t.id === id)?.label ?? id;
 
   function handleAdminTap() {
     const n = adminTaps + 1;
@@ -52,94 +56,107 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={styles.container}
       contentContainerStyle={{ paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
     >
       <BlobBackground />
-      <LinearGradient colors={['#0B3C5D', '#1F6F8B']} style={[styles.header, { paddingTop: topPad + 24 }]}>
+
+      {/* Header */}
+      <LinearGradient
+        colors={['#0B0B0F', '#1A0B2E']}
+        style={[styles.header, { paddingTop: topPad + 24 }]}
+      >
         <TouchableOpacity onPress={cycleAvatar} activeOpacity={0.85} style={styles.avatarWrap}>
-          {user && <AvatarDisplay iconIndex={user.iconIndex} colorIndex={user.colorIndex} size={84} showRing />}
-          <View style={[styles.editBadge, { backgroundColor: colors.accent }]}>
+          {user && <AvatarDisplay iconIndex={user.iconIndex} colorIndex={user.colorIndex} size={86} showRing />}
+          <View style={[styles.editBadge, { backgroundColor: PINK }]}>
             <Ionicons name="refresh" size={12} color="#FFFFFF" />
           </View>
         </TouchableOpacity>
-        <Text style={[styles.username, { fontFamily: 'Poppins_700Bold' }]}>{user?.username}</Text>
-        <View style={styles.badgesRow}>
-          <View style={[styles.anonPill, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-            <Text style={styles.anonText}>🔒 Anonymous</Text>
+        <Text style={styles.username}>{user?.username}</Text>
+        <View style={styles.pillsRow}>
+          <View style={styles.anonPill}>
+            <Text style={styles.pillText}>🔒 Anonymous</Text>
           </View>
           {isTeenMode && (
-            <View style={[styles.anonPill, { backgroundColor: 'rgba(76,175,80,0.25)' }]}>
-              <Text style={styles.anonText}>🌱 Teen Mode</Text>
+            <View style={[styles.anonPill, { borderColor: 'rgba(0,255,136,0.35)', backgroundColor: 'rgba(0,255,136,0.08)' }]}>
+              <Text style={[styles.pillText, { color: GREEN }]}>🌱 Teen Mode</Text>
             </View>
           )}
         </View>
       </LinearGradient>
 
       <View style={styles.content}>
-        <GlassCard style={styles.statsCard}>
+        {/* Stats */}
+        <GlassCard style={styles.statsCard} padding={16}>
           {[
-            { label: 'Conversations', value: user?.totalChats ?? 0, emoji: '💬' },
-            { label: 'Badges', value: user?.badges.length ?? 0, emoji: '🌟' },
-            { label: 'Streak', value: user?.positiveStreak ?? 0, emoji: '✨' },
+            { label: 'Conversations', value: user?.totalChats ?? 0, emoji: '💬', color: CYAN },
+            { label: 'Badges', value: user?.badges.length ?? 0, emoji: '🌟', color: PINK },
+            { label: 'Streak', value: user?.positiveStreak ?? 0, emoji: '✨', color: GREEN },
           ].map((s, i) => (
             <React.Fragment key={s.label}>
-              {i > 0 && <View style={[styles.statDiv, { backgroundColor: colors.border }]} />}
+              {i > 0 && <View style={styles.statDiv} />}
               <View style={styles.statItem}>
                 <Text style={{ fontSize: 20 }}>{s.emoji}</Text>
-                <Text style={[styles.statValue, { color: colors.primary, fontFamily: 'Poppins_700Bold' }]}>{s.value}</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{s.label}</Text>
+                <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
+                <Text style={styles.statLabel}>{s.label}</Text>
               </View>
             </React.Fragment>
           ))}
         </GlassCard>
 
-        <GlassCard>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>Your Profile</Text>
-          <View style={styles.rows}>
-            {[
-              { emoji: moodEmoji(user?.mood ?? ''), label: 'Mood', value: moodLabel(user?.mood ?? '') },
-              { emoji: goalEmoji(user?.goal ?? ''), label: 'Goal', value: goalLabel(user?.goal ?? '') },
-              { emoji: personalityEmoji(user?.personality ?? ''), label: 'Personality', value: personalityLabel(user?.personality ?? '') },
-              { emoji: temperamentEmoji(user?.temperament ?? ''), label: 'Temperament', value: temperamentLabel(user?.temperament ?? '') },
-            ].map((row, i) => (
-              <View key={i} style={[styles.row, { borderBottomColor: colors.border }]}>
-                <Text style={styles.rowEmoji}>{row.emoji}</Text>
-                <View style={styles.rowInfo}>
-                  <Text style={[styles.rowLabel, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>{row.label}</Text>
-                  <Text style={[styles.rowValue, { color: colors.foreground, fontFamily: 'Inter_500Medium' }]}>{row.value}</Text>
-                </View>
-              </View>
-            ))}
+        {/* Profile details */}
+        <GlassCard padding={0} style={{ overflow: 'hidden' as const }}>
+          <View style={styles.cardTitleWrap}>
+            <Text style={styles.cardTitle}>YOUR PROFILE</Text>
           </View>
+          {[
+            { emoji: moodEmoji(user?.mood ?? ''), label: 'Mood', value: moodLabel(user?.mood ?? '') },
+            { emoji: goalEmoji(user?.goal ?? ''), label: 'Goal', value: goalLabel(user?.goal ?? '') },
+            { emoji: personalityEmoji(user?.personality ?? ''), label: 'Personality', value: personalityLabel(user?.personality ?? '') },
+            { emoji: temperamentEmoji(user?.temperament ?? ''), label: 'Temperament', value: temperamentLabel(user?.temperament ?? '') },
+          ].map((row, i, arr) => (
+            <View key={i} style={[styles.row, i < arr.length - 1 && styles.rowDivider]}>
+              <Text style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{row.emoji}</Text>
+              <View style={styles.rowInfo}>
+                <Text style={styles.rowLabel}>{row.label}</Text>
+                <Text style={styles.rowValue}>{row.value}</Text>
+              </View>
+            </View>
+          ))}
         </GlassCard>
 
-        <GlassCard>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>Your Interests</Text>
+        {/* Interests */}
+        <GlassCard padding={16}>
+          <Text style={styles.cardTitle}>YOUR INTERESTS</Text>
           <View style={styles.tagsWrap}>
             {(user?.interests ?? []).map(id => (
-              <View key={id} style={[styles.tag, { backgroundColor: colors.lavenderLight, borderRadius: 14 }]}>
-                <Text style={[styles.tagText, { color: colors.accent, fontFamily: 'Inter_500Medium' }]}>{id}</Text>
+              <View key={id} style={styles.tag}>
+                <Text style={styles.tagText}>{id}</Text>
               </View>
             ))}
           </View>
         </GlassCard>
 
+        {/* Actions */}
         {[
-          { emoji: '🛡️', label: 'Safety Center', color: colors.safeGreenLight, textColor: colors.safeGreen, onPress: () => router.push('/safety') },
-          { emoji: '🌟', label: 'View All Badges', color: colors.lavenderLight, textColor: colors.accent, onPress: () => router.push('/(tabs)/badges') },
-          { emoji: '🔄', label: 'Reset Profile', color: '#FFF0F0', textColor: colors.destructive, onPress: handleReset },
+          { emoji: '🛡️', label: 'Safety Center',   bg: 'rgba(0,255,136,0.08)',  col: GREEN, onPress: () => router.push('/safety')         },
+          { emoji: '🌟', label: 'View All Badges',  bg: 'rgba(255,45,149,0.08)', col: PINK,  onPress: () => router.push('/(tabs)/badges')  },
+          { emoji: '🔄', label: 'Reset Profile',    bg: 'rgba(255,68,85,0.08)',  col: '#FF4455', onPress: handleReset },
         ].map((action, i) => (
-          <TouchableOpacity key={i} onPress={action.onPress} style={[styles.actionBtn, { backgroundColor: action.color, borderRadius: colors.radius }]}>
+          <TouchableOpacity
+            key={i}
+            onPress={action.onPress}
+            style={[styles.actionBtn, { backgroundColor: action.bg, borderColor: action.col + '30' }]}
+          >
             <Text style={{ fontSize: 18 }}>{action.emoji}</Text>
-            <Text style={[styles.actionText, { color: action.textColor, fontFamily: 'Inter_600SemiBold' }]}>{action.label}</Text>
-            <Ionicons name="chevron-forward" size={18} color={action.textColor} />
+            <Text style={[styles.actionText, { color: action.col }]}>{action.label}</Text>
+            <Ionicons name="chevron-forward" size={18} color={action.col} />
           </TouchableOpacity>
         ))}
 
         <TouchableOpacity onPress={handleAdminTap} style={styles.versionRow}>
-          <Text style={[styles.version, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>MindBridge v1.0.0</Text>
+          <Text style={styles.version}>MindBridge v1.0.0</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -147,32 +164,32 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 28, alignItems: 'center', gap: 10 },
+  container: { flex: 1, backgroundColor: '#050505' },
+  header: { paddingHorizontal: 20, paddingBottom: 28, alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   avatarWrap: { position: 'relative' },
   editBadge: { position: 'absolute', bottom: 2, right: 2, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  username: { color: '#FFFFFF', fontSize: 22 },
-  badgesRow: { flexDirection: 'row', gap: 8 },
-  anonPill: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
-  anonText: { color: 'rgba(255,255,255,0.85)', fontSize: 12 },
+  username: { color: '#FFFFFF', fontSize: 22, fontFamily: 'SpaceGrotesk_700Bold' },
+  pillsRow: { flexDirection: 'row', gap: 8 },
+  anonPill: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,45,149,0.35)', backgroundColor: 'rgba(255,45,149,0.08)' },
+  pillText: { color: PINK, fontSize: 12, fontFamily: 'Inter_500Medium' },
   content: { padding: 20, gap: 12 },
   statsCard: { flexDirection: 'row', alignItems: 'center' },
   statItem: { flex: 1, alignItems: 'center', gap: 3, paddingVertical: 6 },
-  statDiv: { width: 1, height: 40 },
-  statValue: { fontSize: 24 },
-  statLabel: { fontSize: 11 },
-  cardTitle: { fontSize: 15, marginBottom: 10 },
-  rows: { gap: 0 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
-  rowEmoji: { fontSize: 20, width: 28, textAlign: 'center' },
+  statDiv: { width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.09)' },
+  statValue: { fontSize: 24, fontFamily: 'SpaceGrotesk_700Bold' },
+  statLabel: { color: MUTED, fontSize: 11, fontFamily: 'Inter_400Regular' },
+  cardTitleWrap: { paddingHorizontal: 14, paddingTop: 14, paddingBottom: 6 },
+  cardTitle: { color: MUTED, fontSize: 11, fontFamily: 'SpaceGrotesk_600SemiBold', letterSpacing: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.07)' },
   rowInfo: { flex: 1 },
-  rowLabel: { fontSize: 11, marginBottom: 2 },
-  rowValue: { fontSize: 14 },
-  tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  tag: { paddingHorizontal: 12, paddingVertical: 6 },
-  tagText: { fontSize: 13 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
-  actionText: { flex: 1, fontSize: 14 },
+  rowLabel: { color: MUTED, fontSize: 11, marginBottom: 2, fontFamily: 'Inter_400Regular' },
+  rowValue: { color: '#FFFFFF', fontSize: 14, fontFamily: 'Inter_500Medium' },
+  tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  tag: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, backgroundColor: 'rgba(255,45,149,0.12)', borderWidth: 1, borderColor: 'rgba(255,45,149,0.25)' },
+  tagText: { color: PINK, fontSize: 13, fontFamily: 'Inter_500Medium' },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12, borderRadius: 16, borderWidth: 1 },
+  actionText: { flex: 1, fontSize: 14, fontFamily: 'SpaceGrotesk_600SemiBold' },
   versionRow: { alignItems: 'center', paddingVertical: 16 },
-  version: { fontSize: 12 },
+  version: { color: MUTED, fontSize: 12, fontFamily: 'Inter_400Regular' },
 });

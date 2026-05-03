@@ -1,27 +1,23 @@
 import React from 'react';
 import { View, ViewStyle, StyleSheet } from 'react-native';
-import { useColors } from '@/hooks/useColors';
 
 interface GlassCardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: ViewStyle | ViewStyle[];
   borderRadius?: number;
   padding?: number;
+  neonBorder?: boolean;
 }
 
-export default function GlassCard({ children, style, borderRadius, padding = 16 }: GlassCardProps) {
-  const colors = useColors();
-  const r = borderRadius ?? colors.radius;
-
+export default function GlassCard({ children, style, borderRadius = 20, padding = 16, neonBorder }: GlassCardProps) {
   return (
     <View
       style={[
         styles.card,
         {
-          backgroundColor: colors.glass,
-          borderRadius: r,
-          borderColor: colors.glassBorder,
-          shadowColor: colors.primary,
+          backgroundColor: 'rgba(255,255,255,0.05)',
+          borderRadius,
+          borderColor: neonBorder ? 'rgba(255,45,149,0.35)' : 'rgba(255,255,255,0.10)',
           padding,
         },
         style,
@@ -35,9 +31,10 @@ export default function GlassCard({ children, style, borderRadius, padding = 16 
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowColor: '#FF2D95',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 6,
   },
 });

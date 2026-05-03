@@ -1,82 +1,66 @@
+// Dark Neon palette — used exclusively across the entire app
+const neon = {
+  background:  '#050505',
+  bgAlt:       '#0B0B0F',
+  foreground:  '#FFFFFF',
+  card:        'rgba(255,255,255,0.05)',
+  cardForeground: '#FFFFFF',
+
+  primary:     '#FF2D95',   // neon pink
+  secondary:   '#D633FF',   // neon purple
+  accent:      '#00D4FF',   // cyan
+  lavender:    '#7B2CFF',   // deep violet
+
+  primaryForeground:  '#FFFFFF',
+  secondaryForeground:'#FFFFFF',
+  accentForeground:   '#FFFFFF',
+
+  lavenderLight:  'rgba(123,44,255,0.18)',
+  muted:          'rgba(255,255,255,0.07)',
+  mutedForeground:'rgba(255,255,255,0.50)',
+
+  safeGreen:      '#00FF88',
+  safeGreenLight: 'rgba(0,255,136,0.12)',
+
+  destructive:            '#FF4455',
+  destructiveForeground:  '#FFFFFF',
+
+  border:       'rgba(255,255,255,0.09)',
+  input:        'rgba(255,255,255,0.08)',
+  warning:      '#FFB020',
+  warningLight: 'rgba(255,176,32,0.12)',
+
+  glass:        'rgba(255,255,255,0.05)',
+  glassBorder:  'rgba(255,255,255,0.10)',
+
+  // Neon glow blobs
+  blobBlue:     'rgba(0,212,255,0.10)',
+  blobPurple:   'rgba(214,51,255,0.12)',
+  blobLavender: 'rgba(255,45,149,0.10)',
+
+  // backward-compat
+  text:         '#FFFFFF',
+  tint:         '#FF2D95',
+  blueDeep:     '#7B2CFF',
+  blueLight:    'rgba(123,44,255,0.15)',
+  purple:       '#D633FF',
+  purpleLight:  'rgba(214,51,255,0.15)',
+  greenSafe:    '#00FF88',
+  greenLight:   'rgba(0,255,136,0.12)',
+  surfaceAlt:   'rgba(255,255,255,0.06)',
+};
+
 const colors = {
-  light: {
-    text: "#1F2937",
-    tint: "#0B3C5D",
-    background: "#F5F7FA",
-    foreground: "#1F2937",
-    card: "#FFFFFF",
-    cardForeground: "#1F2937",
-    primary: "#0B3C5D",
-    primaryForeground: "#FFFFFF",
-    secondary: "#1F6F8B",
-    secondaryForeground: "#FFFFFF",
-    accent: "#6C63FF",
-    accentForeground: "#FFFFFF",
-    lavender: "#A29BFE",
-    lavenderLight: "#EEF0FF",
-    muted: "#F0F2F5",
-    mutedForeground: "#6B7280",
-    safeGreen: "#4CAF50",
-    safeGreenLight: "#E8F5E9",
-    destructive: "#E57373",
-    destructiveForeground: "#FFFFFF",
-    border: "rgba(0,0,0,0.08)",
-    input: "#E5E7EB",
-    warning: "#F59E0B",
-    warningLight: "#FEF3C7",
-    glass: "rgba(255,255,255,0.90)",
-    glassBorder: "rgba(255,255,255,0.70)",
-    blobBlue: "rgba(31,111,139,0.10)",
-    blobPurple: "rgba(108,99,255,0.08)",
-    blobLavender: "rgba(162,155,254,0.10)",
-    // backward-compat aliases
-    purple: "#6C63FF",
-    purpleLight: "#EEF0FF",
-    blueDeep: "#0B3C5D",
-    blueLight: "#E8F2FB",
-    greenSafe: "#4CAF50",
-    greenLight: "#E8F5E9",
-    surfaceAlt: "#F0F2F5",
-  },
-  dark: {
-    text: "#F0F4F8",
-    tint: "#A29BFE",
-    background: "#0D1117",
-    foreground: "#F0F4F8",
-    card: "#161B22",
-    cardForeground: "#F0F4F8",
-    primary: "#4A90D9",
-    primaryForeground: "#FFFFFF",
-    secondary: "#1F6F8B",
-    secondaryForeground: "#FFFFFF",
-    accent: "#6C63FF",
-    accentForeground: "#FFFFFF",
-    lavender: "#A29BFE",
-    lavenderLight: "#1E1A3A",
-    muted: "#21262D",
-    mutedForeground: "#8B949E",
-    safeGreen: "#4CAF50",
-    safeGreenLight: "#0D2611",
-    destructive: "#E57373",
-    destructiveForeground: "#FFFFFF",
-    border: "rgba(255,255,255,0.08)",
-    input: "#21262D",
-    warning: "#F59E0B",
-    warningLight: "#2D2007",
-    glass: "rgba(22,27,34,0.90)",
-    glassBorder: "rgba(255,255,255,0.08)",
-    blobBlue: "rgba(31,111,139,0.15)",
-    blobPurple: "rgba(108,99,255,0.12)",
-    blobLavender: "rgba(162,155,254,0.10)",
-    purple: "#6C63FF",
-    purpleLight: "#1E1A3A",
-    blueDeep: "#0B3C5D",
-    blueLight: "#0D1E2E",
-    greenSafe: "#4CAF50",
-    greenLight: "#0D2611",
-    surfaceAlt: "#21262D",
-  },
+  light: neon,
+  dark:  neon,
   radius: 20,
+
+  // Gradient arrays — import from here to avoid inline literals
+  gradPrimary:  ['#FF2D95', '#D633FF', '#7B2CFF'] as [string, string, string],
+  gradCyan:     ['#00D4FF', '#0066AA'] as [string, string],
+  gradSuccess:  ['#00FF88', '#00AA55'] as [string, string],
+  gradDanger:   ['#FF4455', '#CC0033'] as [string, string],
+  gradDark:     ['#0B0B0F', '#050505'] as [string, string],
 };
 
 export default colors;

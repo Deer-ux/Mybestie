@@ -11,7 +11,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
 import { useInbox, AnonymousMessage, MessageCategory } from '@/context/InboxContext';
-import { useColors } from '@/hooks/useColors';
 import { trackEvent } from '@/utils/analytics';
 import { useEffect } from 'react';
 import GlassCard from '@/components/GlassCard';
@@ -53,7 +52,6 @@ function formatTime(iso: string) {
 }
 
 export default function InboxScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useApp();
   const { messages, unreadCount, totalCount, markAsRead, saveMessage, deleteMessage, reportMessage, replyToMessage } = useInbox();
@@ -117,19 +115,19 @@ export default function InboxScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={styles.container}>
       <BlobBackground variant="purple" />
 
-      <LinearGradient colors={['#6C63FF', '#0B3C5D']} style={[styles.header, { paddingTop: topPad + 16 }]}>
+      <LinearGradient colors={['#0B0B0F', '#1A0B2E']} style={[styles.header, { paddingTop: topPad + 16 }]}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={[styles.headerTitle, { fontFamily: 'Poppins_700Bold' }]}>📬 Anonymous Status</Text>
-            <Text style={[styles.headerSub, { fontFamily: 'Inter_400Regular' }]}>
+            <Text style={styles.headerTitle}>📬 Anonymous Inbox</Text>
+            <Text style={styles.headerSub}>
               {unreadCount > 0 ? `${unreadCount} new · ${approvedCount} total` : `${approvedCount} messages received`}
             </Text>
           </View>
           {unreadCount > 0 && (
-            <View style={[styles.badge, { backgroundColor: '#E57373' }]}>
+            <View style={styles.badge}>
               <Text style={styles.badgeText}>{unreadCount}</Text>
             </View>
           )}
@@ -137,38 +135,40 @@ export default function InboxScreen() {
 
         <GlassCard style={styles.linkCard} padding={14}>
           <View style={styles.linkRow}>
-            <View style={[styles.linkIcon, { backgroundColor: 'rgba(108,99,255,0.15)' }]}>
+            <View style={styles.linkIcon}>
               <Text style={{ fontSize: 20 }}>🔗</Text>
             </View>
             <View style={styles.linkInfo}>
-              <Text style={[styles.linkLabel, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>Your anonymous link</Text>
-              <Text style={[styles.linkSlug, { color: colors.accent, fontFamily: 'Inter_600SemiBold' }]} numberOfLines={1}>{shareLink}</Text>
+              <Text style={styles.linkLabel}>Your anonymous link</Text>
+              <Text style={styles.linkSlug} numberOfLines={1}>{shareLink}</Text>
             </View>
           </View>
           <View style={styles.linkBtns}>
             <TouchableOpacity
               onPress={handleCopy}
-              style={[styles.linkBtn, { backgroundColor: copied ? colors.safeGreenLight : colors.muted, borderRadius: 10 }]}
+              style={[styles.linkBtn, { backgroundColor: copied ? 'rgba(0,255,136,0.12)' : 'rgba(255,255,255,0.07)', borderRadius: 10 }]}
             >
               <Text style={{ fontSize: 15 }}>{copied ? '✅' : '📋'}</Text>
-              <Text style={[styles.linkBtnText, { color: copied ? colors.safeGreen : colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>
+              <Text style={[styles.linkBtnText, { color: copied ? '#00FF88' : '#FFFFFF' }]}>
                 {copied ? 'Copied!' : 'Copy'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleShare}
-              style={[styles.linkBtn, { backgroundColor: colors.accent, borderRadius: 10, flex: 1.5 }]}
+              style={[styles.linkBtnShare, { flex: 1.5, borderRadius: 10 }]}
             >
-              <Text style={{ fontSize: 15 }}>📤</Text>
-              <Text style={[styles.linkBtnText, { color: '#FFFFFF', fontFamily: 'Inter_600SemiBold' }]}>Share on WhatsApp / Status</Text>
+              <LinearGradient colors={['#FF2D95', '#7B2CFF']} style={styles.linkBtnShareGrad}>
+                <Text style={{ fontSize: 15 }}>📤</Text>
+                <Text style={styles.linkBtnShareText}>Share on WhatsApp / Status</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
           <TouchableOpacity
             onPress={() => router.push({ pathname: '/send-message', params: { slug } })}
-            style={[styles.previewBtn, { borderRadius: 10, borderColor: colors.border }]}
+            style={styles.previewBtn}
           >
             <Text style={{ fontSize: 14 }}>👁️</Text>
-            <Text style={[styles.previewBtnText, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>Preview your public page</Text>
+            <Text style={styles.previewBtnText}>Preview your public page</Text>
           </TouchableOpacity>
         </GlassCard>
       </LinearGradient>
@@ -176,7 +176,7 @@ export default function InboxScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={[styles.tabBar, { backgroundColor: colors.background, borderBottomColor: colors.border }]}
+        style={styles.tabBar}
         contentContainerStyle={{ paddingHorizontal: 8 }}
       >
         {TABS.map(tab => (
@@ -185,12 +185,12 @@ export default function InboxScreen() {
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab(tab.id); }}
             style={[styles.tab, {
               borderBottomWidth: activeTab === tab.id ? 2.5 : 0,
-              borderBottomColor: colors.accent,
+              borderBottomColor: '#FF2D95',
             }]}
           >
             <Text style={{ fontSize: 14 }}>{tab.emoji}</Text>
             <Text style={[styles.tabText, {
-              color: activeTab === tab.id ? colors.accent : colors.mutedForeground,
+              color: activeTab === tab.id ? '#FF2D95' : 'rgba(255,255,255,0.45)',
               fontFamily: activeTab === tab.id ? 'Inter_600SemiBold' : 'Inter_400Regular',
             }]}>
               {tab.label}
@@ -207,10 +207,10 @@ export default function InboxScreen() {
         {visible.length === 0 ? (
           <View style={styles.emptyWrap}>
             <Text style={styles.emptyEmoji}>{activeTab === 'hidden' ? '🔒' : '📭'}</Text>
-            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>
+            <Text style={styles.emptyTitle}>
               {activeTab === 'hidden' ? 'No hidden messages' : 'No messages here yet'}
             </Text>
-            <Text style={[styles.emptySub, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            <Text style={styles.emptySub}>
               {activeTab === 'hidden'
                 ? 'Messages that violate our safety rules appear here.'
                 : 'Share your link on WhatsApp status, Instagram bio, or anywhere to start receiving messages.'}
@@ -218,9 +218,11 @@ export default function InboxScreen() {
             {activeTab === 'all' && (
               <TouchableOpacity
                 onPress={handleShare}
-                style={[styles.emptyShareBtn, { backgroundColor: colors.accent, borderRadius: colors.radius }]}
+                style={styles.emptyShareBtn}
               >
-                <Text style={[styles.emptyShareText, { color: '#FFFFFF', fontFamily: 'Inter_600SemiBold' }]}>📤 Share Your Link Now</Text>
+                <LinearGradient colors={['#FF2D95', '#7B2CFF']} style={styles.emptyShareGrad}>
+                  <Text style={styles.emptyShareText}>📤 Share Your Link Now</Text>
+                </LinearGradient>
               </TouchableOpacity>
             )}
           </View>
@@ -228,15 +230,13 @@ export default function InboxScreen() {
           <Animated.View key={msg.id} entering={FadeInDown.delay(i * 50)}>
             <TouchableOpacity onPress={() => handleViewMessage(msg)} activeOpacity={0.9}>
               <GlassCard
-                style={[styles.msgCard, !msg.isRead && msg.moderationStatus === 'approved' && { borderLeftWidth: 3, borderLeftColor: CAT_COLORS[msg.category] ?? colors.accent }]}
+                style={[styles.msgCard, !msg.isRead && msg.moderationStatus === 'approved' && { borderLeftWidth: 3, borderLeftColor: CAT_COLORS[msg.category] ?? '#00D4FF' }]}
                 padding={14}
               >
                 {msg.moderationStatus === 'hidden' ? (
                   <View style={styles.hiddenMsg}>
                     <Text style={{ fontSize: 18 }}>🔒</Text>
-                    <Text style={[styles.hiddenText, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-                      This message was hidden because it may be unsafe.
-                    </Text>
+                    <Text style={styles.hiddenText}>This message was hidden because it may be unsafe.</Text>
                   </View>
                 ) : (
                   <>
@@ -247,26 +247,22 @@ export default function InboxScreen() {
                           {msg.category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Text>
                       </View>
-                      <Text style={[styles.msgTime, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
-                        {formatTime(msg.timestamp)}
-                      </Text>
+                      <Text style={styles.msgTime}>{formatTime(msg.timestamp)}</Text>
                     </View>
 
-                    <Text style={[styles.msgContent, { color: colors.foreground, fontFamily: 'Inter_400Regular' }]}>
-                      {msg.content}
-                    </Text>
+                    <Text style={styles.msgContent}>{msg.content}</Text>
 
                     {msg.isSaved && (
-                      <View style={[styles.savedBadge, { backgroundColor: colors.lavenderLight }]}>
+                      <View style={styles.savedBadge}>
                         <Text style={{ fontSize: 11 }}>🔖</Text>
-                        <Text style={[styles.savedText, { color: colors.accent, fontFamily: 'Inter_500Medium' }]}>Saved</Text>
+                        <Text style={styles.savedText}>Saved</Text>
                       </View>
                     )}
 
                     {msg.publicReply && (
-                      <View style={[styles.replyWrap, { backgroundColor: colors.safeGreenLight, borderRadius: 8 }]}>
+                      <View style={styles.replyWrap}>
                         <Text style={{ fontSize: 12 }}>✨</Text>
-                        <Text style={[styles.replyText, { color: colors.safeGreen, fontFamily: 'Inter_400Regular' }]} numberOfLines={2}>
+                        <Text style={styles.replyText} numberOfLines={2}>
                           Your reply: {msg.publicReply}
                         </Text>
                       </View>
@@ -275,43 +271,43 @@ export default function InboxScreen() {
                     <View style={styles.msgActions}>
                       <TouchableOpacity
                         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); saveMessage(msg.id); }}
-                        style={[styles.actionBtn, { backgroundColor: msg.isSaved ? colors.lavenderLight : colors.muted, borderRadius: 8 }]}
+                        style={[styles.actionBtn, { backgroundColor: msg.isSaved ? 'rgba(255,45,149,0.12)' : 'rgba(255,255,255,0.07)' }]}
                       >
                         <Text style={{ fontSize: 13 }}>🔖</Text>
-                        <Text style={[styles.actionText, { color: msg.isSaved ? colors.accent : colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>
+                        <Text style={[styles.actionText, { color: msg.isSaved ? '#FF2D95' : 'rgba(255,255,255,0.50)' }]}>
                           {msg.isSaved ? 'Saved' : 'Save'}
                         </Text>
                       </TouchableOpacity>
                       {!msg.publicReply ? (
                         <TouchableOpacity
                           onPress={() => handleReply(msg.id)}
-                          style={[styles.actionBtn, { backgroundColor: colors.safeGreenLight, borderRadius: 8 }]}
+                          style={[styles.actionBtn, { backgroundColor: 'rgba(0,255,136,0.10)' }]}
                         >
                           <Text style={{ fontSize: 13 }}>💬</Text>
-                          <Text style={[styles.actionText, { color: colors.safeGreen, fontFamily: 'Inter_500Medium' }]}>Reply</Text>
+                          <Text style={[styles.actionText, { color: '#00FF88' }]}>Reply</Text>
                         </TouchableOpacity>
                       ) : (
                         <TouchableOpacity
                           onPress={() => handleReply(msg.id)}
-                          style={[styles.actionBtn, { backgroundColor: colors.muted, borderRadius: 8 }]}
+                          style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.07)' }]}
                         >
                           <Text style={{ fontSize: 13 }}>✏️</Text>
-                          <Text style={[styles.actionText, { color: colors.mutedForeground, fontFamily: 'Inter_500Medium' }]}>Edit Reply</Text>
+                          <Text style={[styles.actionText, { color: 'rgba(255,255,255,0.50)' }]}>Edit Reply</Text>
                         </TouchableOpacity>
                       )}
                       <TouchableOpacity
                         onPress={() => confirmDelete(msg.id)}
-                        style={[styles.actionBtn, { backgroundColor: '#FFF0F0', borderRadius: 8 }]}
+                        style={[styles.actionBtn, { backgroundColor: 'rgba(255,68,85,0.10)' }]}
                       >
                         <Text style={{ fontSize: 13 }}>🗑️</Text>
-                        <Text style={[styles.actionText, { color: colors.destructive, fontFamily: 'Inter_500Medium' }]}>Delete</Text>
+                        <Text style={[styles.actionText, { color: '#FF4455' }]}>Delete</Text>
                       </TouchableOpacity>
                       {!msg.isReported && (
                         <TouchableOpacity
                           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); reportMessage(msg.id); }}
-                          style={[styles.actionBtn, { backgroundColor: colors.muted, borderRadius: 8 }]}
+                          style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.07)' }]}
                         >
-                          <Ionicons name="flag-outline" size={13} color={colors.mutedForeground} />
+                          <Ionicons name="flag-outline" size={13} color="rgba(255,255,255,0.50)" />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -325,33 +321,33 @@ export default function InboxScreen() {
 
       <Modal visible={replyModal.open} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.background, paddingBottom: botPad + 20 }]}>
+          <View style={[styles.modalSheet, { paddingBottom: botPad + 20 }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'Poppins_600SemiBold' }]}>Reply Publicly ✨</Text>
+              <Text style={styles.modalTitle}>Reply Publicly ✨</Text>
               <TouchableOpacity onPress={() => setReplyModal({ id: '', open: false })}>
-                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+                <Ionicons name="close" size={22} color="rgba(255,255,255,0.50)" />
               </TouchableOpacity>
             </View>
-            <Text style={[styles.modalNote, { color: colors.mutedForeground, fontFamily: 'Inter_400Regular' }]}>
+            <Text style={styles.modalNote}>
               Your reply is posted anonymously. The sender remains unknown to you.
             </Text>
-            <View style={[styles.replyInput, { borderColor: colors.border, borderRadius: colors.radius - 4 }]}>
+            <View style={styles.replyInput}>
               <TextInput
-                style={[styles.replyInputText, { color: colors.foreground, fontFamily: 'Inter_400Regular' }]}
+                style={styles.replyInputText}
                 value={replyText}
                 onChangeText={setReplyText}
                 placeholder="Write your public reply..."
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor="rgba(255,255,255,0.30)"
                 multiline maxLength={300} autoFocus
               />
             </View>
             <TouchableOpacity
               onPress={submitReply}
               disabled={!replyText.trim()}
-              style={[styles.replySubmitBtn, { borderRadius: colors.radius, opacity: replyText.trim() ? 1 : 0.4 }]}
+              style={[styles.replySubmitBtn, { opacity: replyText.trim() ? 1 : 0.4 }]}
             >
-              <LinearGradient colors={['#6C63FF', '#A29BFE']} style={styles.replySubmitGrad}>
-                <Text style={[styles.replySubmitText, { fontFamily: 'Inter_600SemiBold' }]}>Post Reply</Text>
+              <LinearGradient colors={['#FF2D95', '#7B2CFF']} style={styles.replySubmitGrad}>
+                <Text style={styles.replySubmitText}>Post Reply</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -361,58 +357,76 @@ export default function InboxScreen() {
   );
 }
 
+const PINK  = '#FF2D95';
+const CYAN  = '#00D4FF';
+const MUTED = 'rgba(255,255,255,0.50)';
+
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: 18, paddingBottom: 18, gap: 14 },
+  container: { flex: 1, backgroundColor: '#050505' },
+  header: { paddingHorizontal: 18, paddingBottom: 18, gap: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   headerTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  headerTitle: { color: '#FFFFFF', fontSize: 21 },
-  headerSub: { color: 'rgba(255,255,255,0.72)', fontSize: 13, marginTop: 3 },
-  badge: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  headerTitle: { color: '#FFFFFF', fontSize: 21, fontFamily: 'SpaceGrotesk_700Bold' },
+  headerSub: { color: MUTED, fontSize: 13, marginTop: 3, fontFamily: 'Inter_400Regular' },
+  badge: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginTop: 4, backgroundColor: PINK },
   badgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' as const },
   linkCard: { gap: 10 },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  linkIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  linkIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,212,255,0.10)' },
   linkInfo: { flex: 1 },
-  linkLabel: { fontSize: 11, marginBottom: 2 },
-  linkSlug: { fontSize: 13 },
+  linkLabel: { fontSize: 11, marginBottom: 2, color: MUTED, fontFamily: 'Inter_400Regular' },
+  linkSlug: { fontSize: 13, color: CYAN, fontFamily: 'Inter_600SemiBold' },
   linkBtns: { flexDirection: 'row', gap: 8 },
-  linkBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 5 },
-  linkBtnText: { fontSize: 12 },
-  previewBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 9, gap: 7, borderWidth: 1 },
-  previewBtnText: { fontSize: 13 },
-  tabBar: { borderBottomWidth: 1, maxHeight: 52 },
+  linkBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 5, borderRadius: 10 },
+  linkBtnText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  linkBtnShare: { overflow: 'hidden' as const },
+  linkBtnShareGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 5, borderRadius: 10 },
+  linkBtnShareText: { color: '#FFFFFF', fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  previewBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 9, gap: 7,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', borderRadius: 10,
+  },
+  previewBtnText: { fontSize: 13, color: MUTED, fontFamily: 'Inter_500Medium' },
+  tabBar: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)', maxHeight: 52, backgroundColor: '#0B0B0F' },
   tab: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 13, gap: 5 },
   tabText: { fontSize: 12 },
   list: { flex: 1 },
   emptyWrap: { alignItems: 'center', paddingTop: 52, gap: 12, paddingHorizontal: 20 },
   emptyEmoji: { fontSize: 58 },
-  emptyTitle: { fontSize: 18, textAlign: 'center' },
-  emptySub: { fontSize: 14, textAlign: 'center', lineHeight: 21 },
-  emptyShareBtn: { paddingHorizontal: 22, paddingVertical: 13, marginTop: 6 },
-  emptyShareText: { fontSize: 15 },
+  emptyTitle: { fontSize: 18, textAlign: 'center', color: '#FFFFFF', fontFamily: 'SpaceGrotesk_600SemiBold' },
+  emptySub: { fontSize: 14, textAlign: 'center', lineHeight: 21, color: MUTED, fontFamily: 'Inter_400Regular' },
+  emptyShareBtn: { marginTop: 6, borderRadius: 20, overflow: 'hidden' as const },
+  emptyShareGrad: { paddingHorizontal: 22, paddingVertical: 13 },
+  emptyShareText: { color: '#FFFFFF', fontSize: 15, fontFamily: 'SpaceGrotesk_600SemiBold' },
   msgCard: { gap: 10 },
   hiddenMsg: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
-  hiddenText: { flex: 1, fontSize: 13, lineHeight: 19, fontStyle: 'italic' as const },
+  hiddenText: { flex: 1, fontSize: 13, lineHeight: 19, fontStyle: 'italic' as const, color: MUTED, fontFamily: 'Inter_400Regular' },
   msgTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  catBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4 },
-  catText: { fontSize: 12 },
-  msgTime: { fontSize: 11 },
-  msgContent: { fontSize: 14, lineHeight: 22 },
-  savedBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  savedText: { fontSize: 12 },
-  replyWrap: { flexDirection: 'row', alignItems: 'flex-start', padding: 8, gap: 6 },
-  replyText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  catBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
+  catText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  msgTime: { fontSize: 11, color: MUTED, fontFamily: 'Inter_400Regular' },
+  msgContent: { fontSize: 14, lineHeight: 22, color: '#FFFFFF', fontFamily: 'Inter_400Regular' },
+  savedBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start',
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+    backgroundColor: 'rgba(255,45,149,0.12)',
+  },
+  savedText: { fontSize: 12, color: PINK, fontFamily: 'Inter_500Medium' },
+  replyWrap: {
+    flexDirection: 'row', alignItems: 'flex-start', padding: 8, gap: 6,
+    backgroundColor: 'rgba(0,255,136,0.08)', borderRadius: 8,
+  },
+  replyText: { flex: 1, fontSize: 12, lineHeight: 17, color: '#00FF88', fontFamily: 'Inter_400Regular' },
   msgActions: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 7, gap: 4 },
-  actionText: { fontSize: 12 },
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
-  modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 14 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 7, gap: 4, borderRadius: 8 },
+  actionText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.60)' },
+  modalSheet: { backgroundColor: '#0B0B0F', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,45,149,0.30)' },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  modalTitle: { fontSize: 17 },
-  modalNote: { fontSize: 13, lineHeight: 19 },
-  replyInput: { borderWidth: 1, padding: 12, minHeight: 80 },
-  replyInputText: { fontSize: 14, lineHeight: 21 },
-  replySubmitBtn: { overflow: 'hidden' as const },
+  modalTitle: { fontSize: 17, color: '#FFFFFF', fontFamily: 'SpaceGrotesk_700Bold' },
+  modalNote: { fontSize: 13, lineHeight: 19, color: MUTED, fontFamily: 'Inter_400Regular' },
+  replyInput: { borderWidth: 1, borderColor: 'rgba(255,45,149,0.30)', padding: 12, minHeight: 80, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)' },
+  replyInputText: { fontSize: 14, lineHeight: 21, color: '#FFFFFF', fontFamily: 'Inter_400Regular' },
+  replySubmitBtn: { borderRadius: 20, overflow: 'hidden' as const },
   replySubmitGrad: { paddingVertical: 14, alignItems: 'center' },
-  replySubmitText: { color: '#FFFFFF', fontSize: 15 },
+  replySubmitText: { color: '#FFFFFF', fontSize: 15, fontFamily: 'SpaceGrotesk_600SemiBold' },
 });
