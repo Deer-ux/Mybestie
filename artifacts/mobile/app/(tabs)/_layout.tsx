@@ -6,8 +6,8 @@ import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
-
 import { useColors } from "@/hooks/useColors";
+import FloatingBridgeButton from "@/components/FloatingBridgeButton";
 
 function NativeTabLayout() {
   return (
@@ -15,6 +15,10 @@ function NativeTabLayout() {
       <NativeTabs.Trigger name="home">
         <Icon sf={{ default: "house", selected: "house.fill" }} />
         <Label>Home</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="inbox">
+        <Icon sf={{ default: "envelope", selected: "envelope.fill" }} />
+        <Label>Inbox</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="badges">
         <Icon sf={{ default: "star", selected: "star.fill" }} />
@@ -38,7 +42,7 @@ function ClassicTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
         tabBarStyle: {
@@ -79,6 +83,18 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
+        name="inbox"
+        options={{
+          title: "Inbox",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="envelope" tintColor={color} size={24} />
+            ) : (
+              <Feather name="mail" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
         name="badges"
         options={{
           title: "Badges",
@@ -107,8 +123,10 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
-  return <ClassicTabLayout />;
+  return (
+    <View style={{ flex: 1 }}>
+      {isLiquidGlassAvailable() ? <NativeTabLayout /> : <ClassicTabLayout />}
+      <FloatingBridgeButton bottomOffset={90} />
+    </View>
+  );
 }
