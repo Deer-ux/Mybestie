@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Share } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,15 @@ import GlassCard from '@/components/GlassCard';
 import { MOODS, GOALS, PERSONALITIES } from '@/utils/helpers';
 import colors from '@/constants/colors';
 
+function getPublicLink(slug: string): string {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return `${window.location.origin}/message/${slug}`;
+  }
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (domain) return `https://${domain}/message/${slug}`;
+  return `/message/${slug}`;
+}
+
 const PINK   = '#FF2D95';
 const CYAN   = '#00D4FF';
 const GREEN  = '#00FF88';
@@ -25,11 +34,39 @@ export default function HomeScreen() {
   const { unreadCount } = useInbox();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
 
+  const [copied, setCopied] = useState(false);
+
   const moodLabel       = MOODS.find(m => m.id === user?.mood)?.label ?? '';
   const moodEmoji       = MOODS.find(m => m.id === user?.mood)?.emoji ?? '😊';
   const goalLabel       = GOALS.find(g => g.id === user?.goal)?.label ?? '';
   const personalityLabel = PERSONALITIES.find(p => p.id === user?.personality)?.label ?? '';
   const slug = user?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? '';
+  const publicLink = getPublicLink(slug);
+
+  async function handleCopyLink() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    trackEvent('copy_link_clicked');
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(publicLink);
+      } catch {
+        await Share.share({ message: publicLink });
+      }
+    } else {
+      await Share.share({ message: publicLink, url: publicLink });
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  }
+
+  async function handleShareLink() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    trackEvent('share_link_clicked');
+    await Share.share({
+      message: `Send me an anonymous message — I won't know who it's from 👀\n${publicLink}`,
+      url: publicLink,
+    });
+  }
 
   async function handleFindMatch() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -159,10 +196,13 @@ export default function HomeScreen() {
               )}
             </View>
 
-            <View style={styles.linkPreview}>
+            <TouchableOpacity onPress={handleCopyLink} style={styles.linkPreview} activeOpacity={0.75}>
               <Text style={{ fontSize: 13 }}>🔗</Text>
-              <Text style={styles.linkText} numberOfLines={1}>mindbridge.app/message/{slug}</Text>
-            </View>
+              <Text style={styles.linkText} numberOfLines={1}>{publicLink}</Text>
+              <Text style={[styles.copyHint, copied && styles.copyHintDone]}>
+                {copied ? '✓ Copied!' : 'Tap to copy'}
+              </Text>
+            </TouchableOpacity>
 
             <View style={styles.inboxActions}>
               <TouchableOpacity
@@ -172,7 +212,7 @@ export default function HomeScreen() {
                 <Text style={styles.inboxBtnOutlineText}>Open Inbox</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => router.push({ pathname: '/send-message', params: { slug } })}
+                onPress={handleShareLink}
                 style={styles.inboxBtnFill}
               >
                 <LinearGradient colors={colors.gradPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.inboxBtnGrad}>
@@ -297,7 +337,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', padding: 10, gap: 7,
     backgroundColor: 'rgba(0,212,255,0.08)', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(0,212,255,0.20)',
   },
-  linkText: { flex: 1, fontSize: 12, color: CYAN, fontFamily: 'Inter_400Regular' },
+  linkText:     { flex: 1, fontSize: 12, color: CYAN, fontFamily: 'Inter_400Regular' },
+  copyHint:     { fontSize: 11, color: MUTED, fontFamily: 'Inter_400Regular' },
+  copyHintDone: { color: '#00FF88' },
   inboxActions: { flexDirection: 'row', gap: 10 },
   inboxBtnOutline: {
     flex: 1, paddingVertical: 11, alignItems: 'center',
