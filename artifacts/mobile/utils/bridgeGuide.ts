@@ -253,14 +253,14 @@ const RESPONSES: Record<BridgeIntent, string[]> = {
   ],
   casual_chat: [
     "Hey! Good to have you here. What's on your mind today?",
-    "Hi! I'm BridgeGuide — here to chat, give advice, or just listen. How are you doing?",
+    "Hi! I'm Bestie AI — here to chat, give advice, or just listen. How are you doing?",
     "Hey! How's your day going?",
     "Good to see you. Anything on your mind, or just stopping by?",
   ],
   short_unclear: [],
   app_help: [
-    "I'm BridgeGuide — an AI companion built into MindBridge. I can help with career and skills, study tips, habits, culture and history, conversation starters, and emotional support.\n\nJust ask me anything — no topic is off limits.",
-    "MindBridge is an anonymous chat app where you connect with people based on mood, goal, and personality. Your anonymous inbox lets people send you messages through a private link.\n\nI'm the BridgeGuide AI — think of me as your personal guide on the app. What can I help you with?",
+    "I'm Bestie AI — your AI companion on MyBestie. I can help with career and skills, study tips, habits, culture and history, conversation starters, and emotional support.\n\nJust ask me anything — no topic is off limits.",
+    "MyBestie is an anonymous chat app where you connect with people based on mood, goal, and personality. Your anonymous inbox lets people send you messages through a private link.\n\nI'm Bestie AI — think of me as your personal guide on the app. What can I help you with?",
   ],
   general: [
     "I'm here. What's on your mind?",

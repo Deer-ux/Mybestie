@@ -158,7 +158,7 @@ export default function HomeScreen() {
                   <Text style={{ fontSize: 28 }}>✨</Text>
                 </View>
                 <View style={styles.aiInfo}>
-                  <Text style={styles.aiName}>BridgeGuide AI</Text>
+                  <Text style={styles.aiName}>Bestie AI</Text>
                   <Text style={styles.aiTagline}>Career · Study · Habits · Culture · Chat</Text>
                   <View style={styles.aiChipsRow}>
                     {['💼 Skills', '🎓 Education', '🚀 Growth', '💬 Starters'].map(c => (

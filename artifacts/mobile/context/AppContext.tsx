@@ -123,11 +123,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (adminSession) {
         const { token } = JSON.parse(adminSession) as { token: string };
         try {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 8000);
           const resp = await fetch(`${apiBase()}/api/auth/verify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token }),
-          });
+            signal: ctrl.signal,
+          }).finally(() => clearTimeout(timer));
           if (resp.ok) {
             const data = await resp.json() as { role: string };
             if (data.role === 'owner') {

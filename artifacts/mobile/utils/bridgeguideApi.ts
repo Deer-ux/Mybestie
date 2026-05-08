@@ -50,7 +50,7 @@ export async function callBridgeGuideApi(
     return data.reply;
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('BridgeGuide took too long to respond. Please try again.');
+      throw new Error('Bestie AI took too long to respond. Please try again.');
     }
     throw err;
   } finally {

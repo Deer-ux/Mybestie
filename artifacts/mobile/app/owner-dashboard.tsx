@@ -220,7 +220,7 @@ export default function OwnerDashboardScreen() {
 
               {/* ── AI Usage ── */}
               <Animated.View entering={FadeInDown.delay(260)}>
-                <Text style={styles.sectionTitle}>✨ BridgeGuide AI</Text>
+                <Text style={styles.sectionTitle}>✨ Bestie AI</Text>
                 <View style={styles.statsGrid}>
                   <StatCard emoji="🤖" label="Questions Asked" value={metrics.bridgeGuideQuestions} color={CYAN} />
                   <StatCard emoji="👥" label="AI Users"        value={metrics.bridgeGuideUsers}      color={PINK} />

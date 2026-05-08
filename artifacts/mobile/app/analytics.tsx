@@ -251,7 +251,7 @@ export default function AnalyticsScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(260)}>
-          <Text style={styles.section}>✨ BridgeGuide AI Usage</Text>
+          <Text style={styles.section}>✨ Bestie AI Usage</Text>
           <View style={styles.cardRow}>
             <MetricCard emoji="🤖" label="Questions Asked" value={metrics.bridgeGuideQuestions} color={CYAN}    />
             <MetricCard emoji="👥" label="AI Users"        value={metrics.bridgeGuideUsers}      color={PINK}    />

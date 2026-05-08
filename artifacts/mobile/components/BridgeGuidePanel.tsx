@@ -40,7 +40,7 @@ export default function BridgeGuidePanel({ onUseSuggestion, isVisible, onClose, 
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
           style={styles.aiPill}
         >
-          <Text style={styles.aiPillText}>✨ BridgeGuide AI</Text>
+          <Text style={styles.aiPillText}>✨ Bestie AI</Text>
         </LinearGradient>
         <TouchableOpacity onPress={onClose}>
           <Ionicons name="close-circle" size={24} color={MUTED} />

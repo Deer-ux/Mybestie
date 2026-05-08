@@ -61,7 +61,7 @@ export default function SafetyModal({ visible, level, isTeenMode = false, onDism
 
             <TouchableOpacity style={[styles.btn, { backgroundColor: '#00D4FF' }]} onPress={onTalkToAI}>
               <Text style={styles.btnEmoji}>✨</Text>
-              <Text style={styles.btnText}>Talk to BridgeGuide AI Support</Text>
+              <Text style={styles.btnText}>Talk to Bestie AI Support</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.btn, { backgroundColor: '#00FF88' }]} onPress={onLeaveChat}>

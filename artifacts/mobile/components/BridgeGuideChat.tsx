@@ -29,7 +29,7 @@ interface ChatMessage {
 const GREETING: ChatMessage = {
   id: 'welcome',
   isUser: false,
-  text: "Hey! I'm BridgeGuide — your AI companion on MyBestie.\n\nAsk me anything: career, skills, study tips, habits, culture, life advice, or just a chat. What's on your mind?",
+  text: "Hey! I'm Bestie AI — your AI companion on MyBestie.\n\nAsk me anything: career, skills, study tips, habits, culture, life advice, or just a chat. What's on your mind?",
   timestamp: new Date(),
 };
 
@@ -114,7 +114,7 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
           </View>
           <View style={styles.headerInfo}>
             <View style={styles.headerNameRow}>
-              <Text style={styles.headerName}>BridgeGuide AI</Text>
+              <Text style={styles.headerName}>Bestie AI</Text>
               <View style={styles.aiBadge}>
                 <Text style={styles.aiBadgeText}>AI</Text>
               </View>
@@ -169,7 +169,7 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
           <View style={[styles.msgRow, styles.msgRowLeft]}>
             <View style={styles.aiDot}><Text style={{ fontSize: 13 }}>✨</Text></View>
             <View style={styles.aiBubble}>
-              <Text style={styles.typingText}>BridgeGuide is thinking...</Text>
+              <Text style={styles.typingText}>Bestie AI is thinking...</Text>
             </View>
           </View>
         )}
@@ -199,7 +199,7 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
             style={styles.textInput}
             value={input}
             onChangeText={setInput}
-            placeholder="Ask BridgeGuide anything..."
+            placeholder="Ask Bestie AI anything..."
             placeholderTextColor="rgba(255,255,255,0.30)"
             multiline
             maxLength={500}
@@ -217,7 +217,7 @@ export default function BridgeGuideChat({ compact = false, onClose }: Props) {
           </TouchableOpacity>
         </View>
         <Text style={styles.disclaimer}>
-          BridgeGuide is AI — not a licensed counsellor or real person.
+          Bestie AI is AI — not a licensed counsellor or real person.
         </Text>
       </View>
     </View>

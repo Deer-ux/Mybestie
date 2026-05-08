@@ -30,7 +30,7 @@ const FEATURES = [
   { emoji: '🔒', title: 'Anonymous Identity',  desc: 'No real name, no phone. Always private.' },
   { emoji: '🧠', title: 'Smart Matching',       desc: 'Matched by mood, goal, and personality.' },
   { emoji: '❤️', title: 'Emotional Support',    desc: 'A safe space to share and be heard.' },
-  { emoji: '✨', title: 'AI BridgeGuide',       desc: 'Your personal AI conversation guide.' },
+  { emoji: '✨', title: 'Bestie AI',             desc: 'Your personal AI conversation guide.' },
   { emoji: '🛡️', title: 'Teen Safety',          desc: 'Separate moderated spaces for all ages.' },
   { emoji: '🤝', title: 'Real Reactions',       desc: 'Express yourself with emoji reactions.' },
 ];

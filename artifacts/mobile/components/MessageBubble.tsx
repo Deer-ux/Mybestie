@@ -36,7 +36,7 @@ export default function MessageBubble({ message, onReact }: MessageBubbleProps) 
             end={{ x: 1, y: 0 }}
             style={[styles.bubble, styles.guideBubble]}
           >
-            <Text style={styles.guideLabel}>✨ BridgeGuide</Text>
+            <Text style={styles.guideLabel}>✨ Bestie AI</Text>
             <Text style={styles.textWhite}>{message.text}</Text>
           </LinearGradient>
         ) : (

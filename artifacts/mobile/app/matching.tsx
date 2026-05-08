@@ -121,7 +121,7 @@ export default function MatchingScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.honestTitle}>How matching works</Text>
                 <Text style={styles.honestBody}>
-                  MyBestie searches for real users with matching mood, goals, and interests. If no one is available, you can always talk to BridgeGuide AI or share your anonymous link.
+                  MyBestie searches for real users with matching mood, goals, and interests. If no one is available, you can always talk to Bestie AI or share your anonymous link.
                 </Text>
               </View>
             </GlassCard>
@@ -198,7 +198,7 @@ export default function MatchingScreen() {
                   <Text style={{ fontSize: 22 }}>✨</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.optionTitle}>Talk to BridgeGuide AI</Text>
+                  <Text style={styles.optionTitle}>Talk to Bestie AI</Text>
                   <Text style={styles.optionSub}>Get career, study, and life advice — or just chat</Text>
                 </View>
                 <View style={styles.aiBadge}>

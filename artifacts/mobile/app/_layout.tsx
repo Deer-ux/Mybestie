@@ -14,6 +14,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, ReactNode } from "react";
+import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -81,6 +82,21 @@ export default function RootLayout() {
   // Hide the splash screen immediately on first render — do not wait for fonts.
   useEffect(() => {
     SplashScreen.hideAsync().catch(() => null);
+  }, []);
+
+  // Fix web background — prevent browser default white from showing at the
+  // bottom of scroll containers or behind safe-area insets.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (typeof document === 'undefined') return;
+    const BG = '#050505';
+    document.documentElement.style.backgroundColor = BG;
+    document.documentElement.style.minHeight = '100%';
+    document.body.style.backgroundColor = BG;
+    document.body.style.minHeight = '100%';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.overflowX = 'hidden';
   }, []);
 
   return (
