@@ -12,6 +12,7 @@ import { useApp } from '@/context/AppContext';
 import GlassCard from '@/components/GlassCard';
 import BlobBackground from '@/components/BlobBackground';
 import { getMetrics, AnalyticsMetrics } from '@/utils/analytics';
+import AdminNav from '@/components/AdminNav';
 
 const PINK    = '#FF2D95';
 const CYAN    = '#00D4FF';
@@ -94,11 +95,7 @@ export default function OwnerDashboardScreen() {
 
   return (
     <>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ paddingBottom: botPad + 48 }}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.container}>
         <BlobBackground variant="purple" />
 
         {/* ── Header ── */}
@@ -125,6 +122,12 @@ export default function OwnerDashboardScreen() {
           </View>
         </LinearGradient>
 
+        <AdminNav onLogout={() => setShowLogout(true)} />
+
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: botPad + 48 }}
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.content}>
 
           {/* ── Loading ── */}
@@ -248,7 +251,8 @@ export default function OwnerDashboardScreen() {
             </>
           )}
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       {/* ── Logout Confirm Modal ── */}
       <Modal visible={showLogout} transparent animationType="fade" onRequestClose={() => setShowLogout(false)}>

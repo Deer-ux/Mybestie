@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
 import GlassCard from '@/components/GlassCard';
 import BlobBackground from '@/components/BlobBackground';
+import AdminNav from '@/components/AdminNav';
 
 const PINK  = '#FF2D95';
 const CYAN  = '#00D4FF';
@@ -110,11 +111,7 @@ export default function AdminScreen() {
 
   return (
     <>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ paddingBottom: 60 }}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.container}>
         <BlobBackground variant="purple" />
 
         <LinearGradient colors={['#1A0B2E', '#050505']} style={[styles.header, { paddingTop: topPad + 16 }]}>
@@ -126,13 +123,15 @@ export default function AdminScreen() {
               <Text style={styles.headerTitle}>🛡️ Moderation</Text>
               <Text style={styles.headerSub}>Owner-only · Content & safety dashboard</Text>
             </View>
-            <TouchableOpacity onPress={() => router.push('/analytics')} style={styles.analyticsBtn}>
-              <Ionicons name="bar-chart-outline" size={18} color={CYAN} />
-              <Text style={styles.analyticsBtnText}>Analytics</Text>
-            </TouchableOpacity>
           </View>
         </LinearGradient>
 
+        <AdminNav />
+
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 60 }}
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.content}>
 
           {/* Platform Overview */}
@@ -220,7 +219,8 @@ export default function AdminScreen() {
           </Animated.View>
 
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       {/* Ban Confirm Modal */}
       <Modal

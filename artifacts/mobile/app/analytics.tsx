@@ -12,6 +12,7 @@ import { useApp } from '@/context/AppContext';
 import GlassCard from '@/components/GlassCard';
 import BlobBackground from '@/components/BlobBackground';
 import { getMetrics, AnalyticsMetrics } from '@/utils/analytics';
+import AdminNav from '@/components/AdminNav';
 import colors from '@/constants/colors';
 
 const PINK  = '#FF2D95';
@@ -174,6 +175,8 @@ export default function AnalyticsScreen() {
           </TouchableOpacity>
         </View>
       </LinearGradient>
+
+      <AdminNav />
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 18, paddingBottom: botPad + 40 }} showsVerticalScrollIndicator={false}>
 

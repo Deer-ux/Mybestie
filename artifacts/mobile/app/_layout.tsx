@@ -61,6 +61,10 @@ function RootLayoutNav() {
       <Stack.Screen name="owner-login" />
       <Stack.Screen name="owner-dashboard" />
       <Stack.Screen name="analytics" />
+      <Stack.Screen name="admin/users" />
+      <Stack.Screen name="admin/messages" />
+      <Stack.Screen name="admin/reports" />
+      <Stack.Screen name="admin/settings" />
     </Stack>
   );
 }
