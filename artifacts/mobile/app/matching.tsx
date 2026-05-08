@@ -64,7 +64,8 @@ export default function MatchingScreen() {
 
   async function handleShareLink() {
     const slug = user?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? '';
-    const url = `https://mindbridge.app/message/${slug}`;
+    const origin = (Platform.OS === 'web' && typeof window !== 'undefined') ? window.location.origin : `https://${process.env.EXPO_PUBLIC_DOMAIN ?? ''}`;
+    const url = `${origin}/message/${slug}`;
     await Share.share({
       message: `Send me an anonymous message! Say anything — I won't know it's you 👀\n\n${url}`,
       url,
@@ -120,7 +121,7 @@ export default function MatchingScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.honestTitle}>How matching works</Text>
                 <Text style={styles.honestBody}>
-                  MindBridge searches for real users with matching mood, goals, and interests. If no one is available, you can always talk to BridgeGuide AI or share your anonymous link.
+                  MyBestie searches for real users with matching mood, goals, and interests. If no one is available, you can always talk to BridgeGuide AI or share your anonymous link.
                 </Text>
               </View>
             </GlassCard>

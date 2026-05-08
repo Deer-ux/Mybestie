@@ -41,7 +41,7 @@ export default function FeedbackScreen() {
             <Text style={styles.thankEmoji}>🎉</Text>
             <Text style={styles.thankTitle}>Thank You!</Text>
             <Text style={styles.thankSub}>
-              Your feedback helps MindBridge become a safer and more meaningful platform for everyone.
+              Your feedback helps MyBestie become a safer and more meaningful platform for everyone.
             </Text>
             <TouchableOpacity onPress={() => router.replace('/(tabs)/home')} style={styles.doneBtn}>
               <LinearGradient colors={colors.gradPrimary} style={styles.doneBtnGrad}>

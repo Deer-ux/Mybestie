@@ -272,7 +272,7 @@ export default function HomeScreen() {
           <GlassCard padding={14} style={styles.safetyNote}>
             <Text style={{ fontSize: 15 }}>🛡️</Text>
             <Text style={styles.safetyText}>
-              MindBridge is not a therapy or crisis service. If you are in immediate danger, contact emergency services.
+              MyBestie is not a therapy or crisis service. If you are in immediate danger, contact emergency services.
             </Text>
           </GlassCard>
         </Animated.View>

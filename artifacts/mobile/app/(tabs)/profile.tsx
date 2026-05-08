@@ -87,12 +87,12 @@ export default function ProfileScreen() {
     try {
       if (confirming === 'logout') {
         setConfirming(null);
-        await logout();
         router.replace('/');
+        await logout();
       } else if (confirming === 'reset') {
         setConfirming(null);
-        await resetUser();
         router.replace('/');
+        await resetUser();
       }
     } finally {
       setBusy(false);
@@ -240,7 +240,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleAdminTap} style={styles.versionRow}>
-            <Text style={styles.version}>MindBridge v1.0.0</Text>
+            <Text style={styles.version}>MyBestie v1.0.0</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

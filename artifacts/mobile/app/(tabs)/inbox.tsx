@@ -83,8 +83,10 @@ export default function InboxScreen() {
   );
 
   const slug = user?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? '';
-  const shareLink = `mindbridge.app/message/${slug}`;
-  const shareUrl  = `https://${shareLink}`;
+  const shareUrl  = (Platform.OS === 'web' && typeof window !== 'undefined')
+    ? `${window.location.origin}/message/${slug}`
+    : `https://${process.env.EXPO_PUBLIC_DOMAIN ?? ''}/message/${slug}`;
+  const shareLink = shareUrl.replace(/^https?:\/\//, '');
 
   const approvedMsgs = messages.filter(m => m.moderationStatus === 'approved' && !m.isReported);
   const approvedCount = approvedMsgs.length;

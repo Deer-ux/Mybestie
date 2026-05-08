@@ -121,7 +121,7 @@ export default function OnboardingScreen() {
         {step === 0 && (
           <Animated.View entering={FadeInRight} style={styles.stepWrap}>
             <Text style={styles.stepTitle}>Let's keep it safe 🛡️</Text>
-            <Text style={styles.stepSub}>MindBridge separates teen and adult spaces for safer conversations.</Text>
+            <Text style={styles.stepSub}>MyBestie separates teen and adult spaces for safer conversations.</Text>
             <View style={styles.safetyNote}>
               <Text style={{ fontSize: 16 }}>🛡️</Text>
               <Text style={styles.safetyNoteText}>Teens are only matched with teens. Adults only with adults.</Text>
@@ -149,7 +149,7 @@ export default function OnboardingScreen() {
             {ageBlocked && (
               <View style={[styles.blockedCard]}>
                 <Text style={{ fontSize: 22 }}>🚫</Text>
-                <Text style={styles.blockedText}>MindBridge is only available for users aged 13 and above.</Text>
+                <Text style={styles.blockedText}>MyBestie is only available for users aged 13 and above.</Text>
               </View>
             )}
           </Animated.View>
@@ -365,7 +365,7 @@ export default function OnboardingScreen() {
             style={styles.nextBtn}
           >
             <Text style={styles.nextText}>
-              {step === STEPS.length - 1 ? '🚀  Enter MindBridge' : 'Continue'}
+              {step === STEPS.length - 1 ? '🚀  Enter MyBestie' : 'Continue'}
             </Text>
           </LinearGradient>
         </TouchableOpacity>

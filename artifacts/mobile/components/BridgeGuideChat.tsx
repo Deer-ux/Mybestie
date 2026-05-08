@@ -29,7 +29,7 @@ interface ChatMessage {
 const GREETING: ChatMessage = {
   id: 'welcome',
   isUser: false,
-  text: "Hey! I'm BridgeGuide — your AI companion on MindBridge.\n\nAsk me anything: career, skills, study tips, habits, culture, life advice, or just a chat. What's on your mind?",
+  text: "Hey! I'm BridgeGuide — your AI companion on MyBestie.\n\nAsk me anything: career, skills, study tips, habits, culture, life advice, or just a chat. What's on your mind?",
   timestamp: new Date(),
 };
 

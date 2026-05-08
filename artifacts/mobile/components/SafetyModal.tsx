@@ -50,7 +50,7 @@ export default function SafetyModal({ visible, level, isTeenMode = false, onDism
             <View style={styles.disclaimer}>
               <Ionicons name="information-circle-outline" size={15} color={MUTED} />
               <Text style={styles.disclaimerText}>
-                MindBridge is not a therapy service, medical provider, or crisis hotline.
+                MyBestie is not a therapy service, medical provider, or crisis hotline.
               </Text>
             </View>
 

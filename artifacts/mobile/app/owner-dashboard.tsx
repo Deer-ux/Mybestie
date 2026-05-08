@@ -57,9 +57,9 @@ export default function OwnerDashboardScreen() {
 
   async function handleLogout() {
     setLoggingOut(true);
-    await logout();
     setShowLogout(false);
     router.replace('/');
+    await logout();
   }
 
   // ── Access denied ─────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ export default function OwnerDashboardScreen() {
               <Text style={styles.headerEmoji}>⚙️</Text>
               <View>
                 <Text style={styles.headerTitle}>Owner Dashboard</Text>
-                <Text style={styles.headerSub}>MindBridge · Restricted access</Text>
+                <Text style={styles.headerSub}>MyBestie · Restricted access</Text>
               </View>
             </View>
             <View style={styles.headerActions}>

@@ -141,8 +141,8 @@ export default function LandingScreen() {
           {/* ── Hero ── */}
           <Animated.View entering={FadeInDown.delay(60).springify()} style={styles.hero}>
             <View style={styles.titleWrap}>
-              <Text style={styles.titleGlow} accessibilityLabel="MindBridge">MINDBRIDGE</Text>
-              <Text style={styles.title}>MINDBRIDGE</Text>
+              <Text style={styles.titleGlow} accessibilityLabel="MyBestie">MYBESTIE</Text>
+              <Text style={styles.title}>MYBESTIE</Text>
             </View>
             <Text style={styles.subtitle}>
               ANONYMOUS CONVERSATIONS{'\n'}FOR REAL SUPPORT
@@ -270,7 +270,7 @@ export default function LandingScreen() {
 
           {/* ── Feature grid ── */}
           <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.featureSection}>
-            <Text style={styles.sectionLabel}>WHY MINDBRIDGE?</Text>
+            <Text style={styles.sectionLabel}>WHY MYBESTIE?</Text>
             <View style={styles.featureGrid}>
               {FEATURES.map((f, i) => (
                 <View key={i} style={styles.featureCard}>
@@ -286,13 +286,13 @@ export default function LandingScreen() {
           <Animated.View entering={FadeInUp.delay(400).springify()} style={styles.disclaimer}>
             <Text style={{ fontSize: 14 }}>⚠️</Text>
             <Text style={styles.disclaimerText}>
-              MindBridge is not a therapy or crisis service. If you're in immediate danger, please contact emergency services.
+              MyBestie is not a therapy or crisis service. If you're in immediate danger, please contact emergency services.
             </Text>
           </Animated.View>
 
           {/* ── Hidden owner login tap zone ── */}
           <TouchableOpacity onPress={handleVersionTap} style={styles.versionZone} activeOpacity={1}>
-            <Text style={styles.versionText}>MindBridge v1.0.0 · Anonymous-first</Text>
+            <Text style={styles.versionText}>MyBestie v1.0.0 · Anonymous-first</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -306,7 +306,7 @@ export default function LandingScreen() {
             </View>
             <Text style={styles.ownerTitle}>Owner Login</Text>
             <Text style={styles.ownerBody}>
-              This area is for the app owner only. Regular users do not need a password — your account is anonymous.
+              This area is for the app owner only. Regular users do not need a password — your MyBestie account is fully anonymous.
             </Text>
             <TouchableOpacity
               onPress={() => { setShowOwner(false); router.push('/owner-login'); }}

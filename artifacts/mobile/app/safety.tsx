@@ -61,7 +61,7 @@ export default function SafetyScreen() {
           <View style={styles.alertCard}>
             <Text style={{ fontSize: 20 }}>⚠️</Text>
             <Text style={styles.alertText}>
-              MindBridge is <Text style={{ fontFamily: 'Inter_600SemiBold', color: '#FFFFFF' }}>not</Text> a therapy service, medical provider, or emergency crisis service. For emergencies, contact emergency services immediately.
+              MyBestie is <Text style={{ fontFamily: 'Inter_600SemiBold', color: '#FFFFFF' }}>not</Text> a therapy service, medical provider, or emergency crisis service. For emergencies, contact emergency services immediately.
             </Text>
           </View>
         </Animated.View>
@@ -106,7 +106,7 @@ export default function SafetyScreen() {
         <Animated.View entering={FadeInDown.delay(350)}>
           <Text style={styles.sectionTitle}>Moderation Policy</Text>
           <GlassCard>
-            <Text style={styles.modTitle}>The following are strictly not allowed on MindBridge:</Text>
+            <Text style={styles.modTitle}>The following are strictly not allowed on MyBestie:</Text>
             {MODERATION.map((item, i) => (
               <View key={i} style={[styles.modRow, i < MODERATION.length - 1 && styles.modDivider]}>
                 <Text style={{ fontSize: 16 }}>🚫</Text>
