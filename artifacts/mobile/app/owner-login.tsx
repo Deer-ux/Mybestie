@@ -12,40 +12,38 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
 import BlobBackground from '@/components/BlobBackground';
-import colors from '@/constants/colors';
 
-const PINK  = '#FF2D95';
 const CYAN  = '#00D4FF';
 const MUTED = 'rgba(255,255,255,0.50)';
 const PURPLE = '#6C0FBF';
 
 export default function OwnerLoginScreen() {
   const insets = useSafeAreaInsets();
-  const { adminLogin } = useApp();
+  const { ownerLogin } = useApp();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const [email,      setEmail]      = useState('');
-  const [password,   setPassword]   = useState('');
-  const [showPass,   setShowPass]   = useState(false);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState('');
+  const [code,     setCode]     = useState('');
+  const [showCode, setShowCode] = useState(false);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState('');
 
-  const canSubmit = email.trim().length > 0 && password.length > 0 && !loading;
+  const canSubmit = code.trim().length > 0 && !loading;
 
   async function handleLogin() {
     if (!canSubmit) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
     setError('');
-    const result = await adminLogin(email, password);
+    const result = await ownerLogin(code);
     setLoading(false);
     if (result.ok) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace('/admin');
+      router.replace('/owner-dashboard');
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(result.error ?? 'Login failed. Please check your credentials.');
+      setError(result.error ?? 'Login failed. Please check your owner code.');
+      setCode('');
     }
   }
 
@@ -57,17 +55,16 @@ export default function OwnerLoginScreen() {
       <View style={styles.container}>
         <BlobBackground variant="purple" />
 
-        {/* Header */}
         <LinearGradient
           colors={['#1A0B2E', '#050505']}
           style={[styles.header, { paddingTop: topPad + 12 }]}
         >
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.75}>
+          <TouchableOpacity onPress={() => router.replace('/')} style={styles.backBtn} activeOpacity={0.75}>
             <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <View style={styles.lockIcon}>
-              <Text style={{ fontSize: 26 }}>🔐</Text>
+              <Text style={{ fontSize: 28 }}>🔐</Text>
             </View>
             <Text style={styles.headerTitle}>Owner Login</Text>
             <Text style={styles.headerSub}>Admin access only · Not for regular users</Text>
@@ -81,57 +78,36 @@ export default function OwnerLoginScreen() {
         >
           <Animated.View entering={FadeInDown.delay(80).springify()} style={styles.card}>
 
-            {/* Notice */}
             <View style={styles.noticeRow}>
               <Ionicons name="shield-checkmark-outline" size={16} color={CYAN} />
               <Text style={styles.noticeText}>
-                This login is for the app owner only. Regular users sign in anonymously — no email needed.
+                This login is for the app owner only. Regular users sign in anonymously — no code needed.
               </Text>
             </View>
 
-            {/* Email */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>OWNER EMAIL</Text>
-              <View style={[styles.inputWrap, error && styles.inputError]}>
-                <Ionicons name="mail-outline" size={18} color={MUTED} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  value={email}
-                  onChangeText={t => { setEmail(t); setError(''); }}
-                  placeholder="owner@example.com"
-                  placeholderTextColor="rgba(255,255,255,0.25)"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="next"
-                />
-              </View>
-            </View>
-
-            {/* Password */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>PASSWORD</Text>
-              <View style={[styles.inputWrap, error && styles.inputError]}>
-                <Ionicons name="lock-closed-outline" size={18} color={MUTED} style={styles.inputIcon} />
+              <Text style={styles.fieldLabel}>OWNER CODE</Text>
+              <View style={[styles.inputWrap, error ? styles.inputError : null]}>
+                <Ionicons name="key-outline" size={18} color={MUTED} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
-                  value={password}
-                  onChangeText={t => { setPassword(t); setError(''); }}
-                  placeholder="Enter owner password"
+                  value={code}
+                  onChangeText={t => { setCode(t); setError(''); }}
+                  placeholder="Enter your owner code"
                   placeholderTextColor="rgba(255,255,255,0.25)"
-                  secureTextEntry={!showPass}
+                  secureTextEntry={!showCode}
                   autoCapitalize="none"
                   autoCorrect={false}
                   returnKeyType="go"
                   onSubmitEditing={handleLogin}
+                  autoFocus
                 />
-                <TouchableOpacity onPress={() => setShowPass(s => !s)} style={styles.eyeBtn} activeOpacity={0.7}>
-                  <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={18} color={MUTED} />
+                <TouchableOpacity onPress={() => setShowCode(s => !s)} style={styles.eyeBtn} activeOpacity={0.7}>
+                  <Ionicons name={showCode ? 'eye-off-outline' : 'eye-outline'} size={18} color={MUTED} />
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Error */}
             {error !== '' && (
               <Animated.View entering={FadeInDown} style={styles.errorRow}>
                 <Ionicons name="alert-circle-outline" size={16} color="#FF4455" />
@@ -139,7 +115,6 @@ export default function OwnerLoginScreen() {
               </Animated.View>
             )}
 
-            {/* Submit */}
             <TouchableOpacity
               onPress={handleLogin}
               disabled={!canSubmit}
@@ -156,24 +131,22 @@ export default function OwnerLoginScreen() {
                   : (
                     <>
                       <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
-                      <Text style={styles.loginBtnText}>Log In as Owner</Text>
+                      <Text style={styles.loginBtnText}>Enter Owner Dashboard</Text>
                     </>
                   )
                 }
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* Back to normal user */}
             <TouchableOpacity onPress={() => router.replace('/')} style={styles.userLink} activeOpacity={0.75}>
-              <Text style={styles.userLinkText}>← Back to user login</Text>
+              <Text style={styles.userLinkText}>← Back to landing page</Text>
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Security note */}
           <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.secNote}>
             <Text style={{ fontSize: 13 }}>🔒</Text>
             <Text style={styles.secNoteText}>
-              Credentials are verified server-side. Your session token is stored securely on this device and expires on logout.
+              Your owner code is verified server-side. The session token is stored securely on this device and cleared on logout.
             </Text>
           </Animated.View>
         </ScrollView>
@@ -187,8 +160,8 @@ const styles = StyleSheet.create({
   header:       { paddingHorizontal: 20, paddingBottom: 24, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   backBtn:      { marginBottom: 16, alignSelf: 'flex-start' },
   headerCenter: { alignItems: 'center', gap: 10 },
-  lockIcon:     {
-    width: 64, height: 64, borderRadius: 32,
+  lockIcon: {
+    width: 68, height: 68, borderRadius: 34,
     backgroundColor: 'rgba(108,15,191,0.20)',
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: 'rgba(108,15,191,0.40)',
@@ -220,7 +193,7 @@ const styles = StyleSheet.create({
   },
   inputError:   { borderColor: '#FF4455' },
   inputIcon:    { paddingHorizontal: 14 },
-  input:        { flex: 1, paddingVertical: 14, fontSize: 15, color: '#FFFFFF', fontFamily: 'Inter_400Regular' },
+  input:        { flex: 1, paddingVertical: 16, fontSize: 16, color: '#FFFFFF', fontFamily: 'Inter_400Regular' },
   eyeBtn:       { padding: 8 },
 
   errorRow: {
@@ -233,7 +206,7 @@ const styles = StyleSheet.create({
   loginBtnWrap: { borderRadius: 16, overflow: 'hidden' },
   loginBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 16, gap: 10,
+    paddingVertical: 17, gap: 10,
   },
   loginBtnText: { color: '#FFFFFF', fontSize: 16, fontFamily: 'SpaceGrotesk_700Bold' },
 

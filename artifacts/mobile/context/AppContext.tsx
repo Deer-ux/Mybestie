@@ -29,7 +29,7 @@ interface AppContextType {
   isTeenMode:             boolean;
   createAnonymousSession: () => Promise<void>;
   restoreSession:         () => Promise<boolean>;
-  adminLogin:             (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  ownerLogin:             (code: string) => Promise<{ ok: boolean; error?: string }>;
   updateUser:             (updates: Partial<UserProfile>) => Promise<void>;
   completeOnboarding:     (profile: Partial<UserProfile>) => Promise<void>;
   addBadge:               (badgeId: string) => Promise<void>;
@@ -44,7 +44,6 @@ const USER_STORAGE_KEY  = '@mindbridge_user_v3';
 const ADMIN_SESSION_KEY = '@mindbridge_admin_session';
 const ALL_STORAGE_PREFIXES = ['@mindbridge_', '@inbox_'];
 
-// API base — goes through the shared Replit proxy
 function apiBase(): string {
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin;
@@ -86,7 +85,7 @@ function defaultUser(): UserProfile {
   };
 }
 
-function adminUser(token: string): UserProfile {
+function ownerUser(token: string): UserProfile {
   const config = generateAvatarConfig();
   return {
     id:             'owner',
@@ -119,11 +118,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function loadUser() {
     try {
-      // First check for a saved admin session
+      // 1. Check for a saved owner/admin session first
       const adminSession = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
       if (adminSession) {
         const { token } = JSON.parse(adminSession) as { token: string };
-        // Re-verify token with server
         try {
           const resp = await fetch(`${apiBase()}/api/auth/verify`, {
             method: 'POST',
@@ -133,26 +131,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (resp.ok) {
             const data = await resp.json() as { role: string };
             if (data.role === 'owner') {
-              setUser(adminUser(token));
+              setUser(ownerUser(token));
               setIsLoading(false);
               return;
             }
           }
         } catch {
-          // Server unreachable — still restore locally to avoid login loop
-          setUser(adminUser(token));
+          // Server unreachable — restore locally to avoid login loop
+          setUser(ownerUser(token));
           setIsLoading(false);
           return;
         }
-        // Token invalid — clear it
+        // Token invalid — clear it and fall through to normal user
         await AsyncStorage.removeItem(ADMIN_SESSION_KEY);
       }
 
-      // Restore normal user session
+      // 2. Restore normal user session (even if not yet onboarded — so they can resume)
       const stored = await AsyncStorage.getItem(USER_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as UserProfile;
-        setUser(parsed.isOnboarded ? parsed : null);
+        setUser(parsed);
       } else {
         setUser(null);
       }
@@ -181,22 +179,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return false;
   }
 
-  async function adminLogin(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  async function ownerLogin(code: string): Promise<{ ok: boolean; error?: string }> {
     try {
-      const resp = await fetch(`${apiBase()}/api/auth/admin-login`, {
+      const resp = await fetch(`${apiBase()}/api/auth/owner-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ code: code.trim() }),
       });
       const data = await resp.json() as { role?: string; token?: string; error?: string };
       if (!resp.ok || !data.token) {
         return { ok: false, error: data.error ?? 'Login failed.' };
       }
-      // Save admin session separately — never mixed with user data
       await AsyncStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ token: data.token }));
-      setUser(adminUser(data.token));
+      setUser(ownerUser(data.token));
       return { ok: true };
-    } catch (e) {
+    } catch {
       return { ok: false, error: 'Could not reach the server. Please try again.' };
     }
   }
@@ -245,9 +242,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     try {
-      // Clear admin session if present
       await AsyncStorage.removeItem(ADMIN_SESSION_KEY);
-      // Clear all user data
       const allKeys = await AsyncStorage.getAllKeys();
       const toRemove = allKeys.filter(k => ALL_STORAGE_PREFIXES.some(p => k.startsWith(p)));
       if (toRemove.length > 0) await AsyncStorage.multiRemove(toRemove);
@@ -258,7 +253,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       user, isLoading, isTeenMode,
-      createAnonymousSession, restoreSession, adminLogin,
+      createAnonymousSession, restoreSession, ownerLogin,
       updateUser, completeOnboarding, addBadge, incrementChats, resetUser, logout,
     }}>
       {children}

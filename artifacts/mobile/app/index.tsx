@@ -51,10 +51,16 @@ export default function LandingScreen() {
   const [showOwner,    setShowOwner]    = useState(false);
   const [ownerTaps,    setOwnerTaps]    = useState(0);
 
-  // If a valid session is already stored, auto-go to dashboard
+  // Route based on session state once loading finishes
   useEffect(() => {
-    if (!isLoading && user?.isOnboarded) {
+    if (isLoading) return;
+    if (user?.role === 'owner' || user?.isAdmin) {
+      router.replace('/owner-dashboard');
+    } else if (user?.isOnboarded) {
       router.replace('/(tabs)/home');
+    } else if (user && !user.isOnboarded) {
+      // Has a session but hasn't finished onboarding — resume it
+      router.replace('/onboarding');
     }
   }, [isLoading, user]);
 

@@ -28,7 +28,7 @@ type ConfirmKind = 'logout' | 'reset' | null;
 const CONFIRM_CONFIG = {
   logout: {
     title:   'Log Out?',
-    body:    'You will be returned to the welcome screen. Your anonymous data stays on this device.',
+    body:    'You will be returned to the landing page. Your anonymous data stays on this device.',
     confirm: 'Log Out',
     color:   RED,
   },

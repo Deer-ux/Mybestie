@@ -3,11 +3,10 @@ import crypto from "crypto";
 
 const router = Router();
 
-// Simple HMAC-signed token — no DB needed, stateless
 const TOKEN_SECRET = process.env["SESSION_SECRET"] ?? "mindbridge-dev-secret";
 
-function makeToken(role: string, email: string): string {
-  const payload = JSON.stringify({ role, email, iat: Date.now() });
+function makeToken(role: string): string {
+  const payload = JSON.stringify({ role, iat: Date.now() });
   const b64 = Buffer.from(payload).toString("base64url");
   const sig = crypto
     .createHmac("sha256", TOKEN_SECRET)
@@ -16,7 +15,7 @@ function makeToken(role: string, email: string): string {
   return `${b64}.${sig}`;
 }
 
-export function verifyToken(token: string): { role: string; email: string } | null {
+export function verifyToken(token: string): { role: string } | null {
   try {
     const [b64, sig] = token.split(".");
     if (!b64 || !sig) return null;
@@ -31,42 +30,39 @@ export function verifyToken(token: string): { role: string; email: string } | nu
   }
 }
 
-router.post("/auth/admin-login", (req, res) => {
-  const { email, password } = req.body as { email?: string; password?: string };
+// Owner login — single OWNER_CODE env var
+router.post("/auth/owner-login", (req, res) => {
+  const { code } = req.body as { code?: string };
 
-  if (!email || !password) {
-    res.status(400).json({ error: "email and password are required" });
+  if (!code) {
+    res.status(400).json({ error: "Owner code is required." });
     return;
   }
 
-  const adminEmail = process.env["ADMIN_EMAIL"];
-  const adminPassword = process.env["ADMIN_PASSWORD"];
+  const ownerCode = process.env["OWNER_CODE"];
 
-  if (!adminEmail || !adminPassword) {
-    req.log.error("ADMIN_EMAIL or ADMIN_PASSWORD env vars are not set");
-    res.status(503).json({ error: "Admin login is not configured on this server." });
+  if (!ownerCode) {
+    req.log.error("OWNER_CODE env var is not set");
+    res.status(503).json({ error: "Owner login is not configured on this server. Set the OWNER_CODE secret in Replit." });
     return;
   }
 
-  const emailMatch = email.trim().toLowerCase() === adminEmail.trim().toLowerCase();
-  const passMatch  = password === adminPassword;
-
-  if (!emailMatch || !passMatch) {
-    res.status(401).json({ error: "Incorrect email or password." });
+  if (code.trim() !== ownerCode.trim()) {
+    res.status(401).json({ error: "Incorrect owner code. Please try again." });
     return;
   }
 
-  const token = makeToken("owner", email.trim().toLowerCase());
+  const token = makeToken("owner");
   res.json({ role: "owner", token });
 });
 
-// Verify a token — used by the mobile client to re-validate on app restart
+// Verify a token — used by the mobile client on app restart
 router.post("/auth/verify", (req, res) => {
   const { token } = req.body as { token?: string };
   if (!token) { res.status(400).json({ error: "token required" }); return; }
   const payload = verifyToken(token);
   if (!payload) { res.status(401).json({ error: "invalid or expired token" }); return; }
-  res.json({ role: payload.role, email: payload.email });
+  res.json({ role: payload.role });
 });
 
 export default router;
