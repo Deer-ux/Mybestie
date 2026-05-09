@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Platform, Share, Alert, TextInput, Modal, Clipboard,
+  Platform, Share, Alert, TextInput, Modal, Clipboard, ViewStyle,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
-import { useInbox, AnonymousMessage, MessageCategory } from '@/context/InboxContext';
+import { useInbox, AnonymousMessage, MessageCategory, MESSAGE_TTL_MS } from '@/context/InboxContext';
 import { trackEvent } from '@/utils/analytics';
 import GlassCard from '@/components/GlassCard';
 import BlobBackground from '@/components/BlobBackground';
@@ -57,6 +57,18 @@ function formatTime(iso: string) {
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
   return `${Math.floor(diff / 86400000)}d ago`;
+}
+
+// Returns how long until the message disappears (for non-saved messages)
+function expiresIn(iso: string): { label: string; urgent: boolean } {
+  const age  = Date.now() - new Date(iso).getTime();
+  const left = MESSAGE_TTL_MS - age;
+  if (left <= 0) return { label: 'Expiring…', urgent: true };
+  const hrs  = Math.floor(left / 3600000);
+  const mins = Math.floor((left % 3600000) / 60000);
+  if (hrs < 1) return { label: `${mins}m left`, urgent: true };
+  if (hrs < 6) return { label: `${hrs}h ${mins}m left`, urgent: true };
+  return { label: `${hrs}h left`, urgent: false };
 }
 
 function catLabel(cat: string) {
@@ -164,6 +176,14 @@ export default function InboxScreen() {
               <Text style={styles.badgeText}>{unreadCount}</Text>
             </View>
           )}
+        </View>
+
+        {/* ── Disappearing messages notice ── */}
+        <View style={styles.disappearBanner}>
+          <Ionicons name="timer-outline" size={13} color="rgba(255,212,0,0.80)" />
+          <Text style={styles.disappearText}>
+            Messages disappear after <Text style={{ color: '#FFD400', fontFamily: 'Inter_600SemiBold' }}>2 days</Text>. Save any you want to keep.
+          </Text>
         </View>
 
         {/* ── Share link card ── */}
@@ -274,11 +294,11 @@ export default function InboxScreen() {
                 <GlassCard
                   style={[
                     styles.msgCard,
-                    !msg.isRead && { borderLeftWidth: 3, borderLeftColor: CAT_COLORS[msg.category] ?? CYAN },
-                  ]}
+                    ...(!msg.isRead ? [{ borderLeftWidth: 3 as const, borderLeftColor: CAT_COLORS[msg.category] ?? CYAN }] : []),
+                  ] as ViewStyle[]}
                   padding={14}
                 >
-                  {/* Top row: category badge + time */}
+                  {/* Top row: category badge + time + expiry */}
                   <View style={styles.msgTop}>
                     <View style={[styles.catBadge, { backgroundColor: (CAT_COLORS[msg.category] ?? '#6B7280') + '18', borderRadius: 10 }]}>
                       <Text style={{ fontSize: 13 }}>{CAT_EMOJIS[msg.category] ?? '💬'}</Text>
@@ -288,6 +308,24 @@ export default function InboxScreen() {
                     </View>
                     <Text style={styles.msgTime}>{formatTime(msg.timestamp)}</Text>
                   </View>
+
+                  {/* Expiry indicator */}
+                  {msg.isSaved ? (
+                    <View style={styles.expiryRowSaved}>
+                      <Ionicons name="bookmark" size={11} color="#FF2D95" />
+                      <Text style={styles.expirySaved}>Saved · won't disappear</Text>
+                    </View>
+                  ) : (() => {
+                    const { label, urgent } = expiresIn(msg.timestamp);
+                    return (
+                      <View style={[styles.expiryRow, urgent && styles.expiryRowUrgent]}>
+                        <Ionicons name="timer-outline" size={11} color={urgent ? '#FF4455' : 'rgba(255,255,255,0.40)'} />
+                        <Text style={[styles.expiryText, urgent && styles.expiryTextUrgent]}>
+                          {label}
+                        </Text>
+                      </View>
+                    );
+                  })()}
 
                   {/* Message content */}
                   <Text style={styles.msgContent}>{msg.content}</Text>
@@ -410,6 +448,9 @@ const styles = StyleSheet.create({
   badge:          { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginTop: 4, backgroundColor: PINK },
   badgeText:      { color: '#FFFFFF', fontSize: 12, fontWeight: '700' as const },
 
+  disappearBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: 'rgba(255,212,0,0.07)', borderWidth: 1, borderColor: 'rgba(255,212,0,0.18)' },
+  disappearText:   { flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.60)', fontFamily: 'Inter_400Regular', lineHeight: 17 },
+
   linkCard:        { gap: 10 },
   linkRow:         { flexDirection: 'row', alignItems: 'center', gap: 10 },
   linkIcon:        { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,212,255,0.10)' },
@@ -440,8 +481,14 @@ const styles = StyleSheet.create({
   emptyShareGrad:  { paddingHorizontal: 22, paddingVertical: 13 },
   emptyShareText:  { color: '#FFFFFF', fontSize: 15, fontFamily: 'SpaceGrotesk_600SemiBold' },
 
-  msgCard:         { gap: 10 },
+  msgCard:         { gap: 8 },
   msgTop:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  expiryRow:       { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)' },
+  expiryRowUrgent: { backgroundColor: 'rgba(255,68,85,0.10)', borderWidth: 1, borderColor: 'rgba(255,68,85,0.20)' },
+  expiryText:      { fontSize: 10, color: 'rgba(255,255,255,0.40)', fontFamily: 'Inter_500Medium' },
+  expiryTextUrgent:{ color: '#FF4455' },
+  expiryRowSaved:  { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, backgroundColor: 'rgba(255,45,149,0.08)' },
+  expirySaved:     { fontSize: 10, color: '#FF2D95', fontFamily: 'Inter_500Medium' },
   catBadge:        { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4 },
   catText:         { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   msgTime:         { fontSize: 11, color: MUTED, fontFamily: 'Inter_400Regular' },

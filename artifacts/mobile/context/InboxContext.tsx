@@ -7,6 +7,8 @@ export type MessageCategory =
 
 export type ModerationStatus = 'approved' | 'hidden';
 
+export const MESSAGE_TTL_MS = 2 * 24 * 60 * 60 * 1000; // 48 hours
+
 export interface AnonymousMessage {
   id: string;
   recipientSlug: string;
@@ -39,6 +41,16 @@ const InboxContext = createContext<InboxContextType | undefined>(undefined);
 
 function makeId() { return Date.now().toString() + Math.random().toString(36).substr(2, 9); }
 function makeFingerprint() { return Math.random().toString(36).substr(2, 16); }
+
+// Remove messages older than MESSAGE_TTL_MS, unless the user saved them
+function purgeExpired(msgs: AnonymousMessage[]): { kept: AnonymousMessage[]; removed: number } {
+  const cutoff = Date.now() - MESSAGE_TTL_MS;
+  const kept = msgs.filter(m => {
+    if (m.isSaved) return true; // saved messages never expire
+    return new Date(m.timestamp).getTime() > cutoff;
+  });
+  return { kept, removed: msgs.length - kept.length };
+}
 
 const EXTREME_BLOCKED = [
   'kill yourself', 'kys', 'go kill yourself', 'i will kill you', 'i will find you',
@@ -79,11 +91,13 @@ export function InboxProvider({ children, userSlug }: { children: ReactNode; use
     currentSlugRef.current = slug;
     try {
       const stored = await AsyncStorage.getItem(`@inbox_${slug}`);
-      if (stored) {
-        setMessages(JSON.parse(stored));
-      } else {
-        setMessages([]);
+      const raw: AnonymousMessage[] = stored ? JSON.parse(stored) : [];
+      const { kept, removed } = purgeExpired(raw);
+      // Persist the purged list if any messages were expired
+      if (removed > 0) {
+        await AsyncStorage.setItem(`@inbox_${slug}`, JSON.stringify(kept));
       }
+      setMessages(kept);
     } catch {
       setMessages([]);
     }
@@ -96,10 +110,12 @@ export function InboxProvider({ children, userSlug }: { children: ReactNode; use
   }
 
   async function persist(updated: AnonymousMessage[]) {
-    setMessages(updated);
+    // Always purge on write too — ensures saved state is consistent
+    const { kept } = purgeExpired(updated);
+    setMessages(kept);
     const slug = currentSlugRef.current;
     if (slug) {
-      await AsyncStorage.setItem(`@inbox_${slug}`, JSON.stringify(updated));
+      await AsyncStorage.setItem(`@inbox_${slug}`, JSON.stringify(kept));
     }
   }
 
@@ -123,7 +139,8 @@ export function InboxProvider({ children, userSlug }: { children: ReactNode; use
     try {
       const stored = await AsyncStorage.getItem(`@inbox_${recipientSlug}`);
       const existing: AnonymousMessage[] = stored ? JSON.parse(stored) : [];
-      const updated = [newMsg, ...existing];
+      const { kept } = purgeExpired(existing);
+      const updated = [newMsg, ...kept];
       await AsyncStorage.setItem(`@inbox_${recipientSlug}`, JSON.stringify(updated));
       if (currentSlugRef.current === recipientSlug) {
         setMessages(updated);
@@ -134,10 +151,10 @@ export function InboxProvider({ children, userSlug }: { children: ReactNode; use
     }
   }
 
-  function markAsRead(id: string) { persist(messages.map(m => m.id === id ? { ...m, isRead: true } : m)); }
-  function saveMessage(id: string) { persist(messages.map(m => m.id === id ? { ...m, isSaved: !m.isSaved } : m)); }
-  function deleteMessage(id: string) { persist(messages.filter(m => m.id !== id)); }
-  function reportMessage(id: string) { persist(messages.map(m => m.id === id ? { ...m, isReported: true } : m)); }
+  function markAsRead(id: string)   { persist(messages.map(m => m.id === id ? { ...m, isRead: true } : m)); }
+  function saveMessage(id: string)  { persist(messages.map(m => m.id === id ? { ...m, isSaved: !m.isSaved } : m)); }
+  function deleteMessage(id: string){ persist(messages.filter(m => m.id !== id)); }
+  function reportMessage(id: string){ persist(messages.map(m => m.id === id ? { ...m, isReported: true } : m)); }
   function replyToMessage(id: string, reply: string) {
     persist(messages.map(m => m.id === id ? { ...m, publicReply: reply, isRead: true } : m));
   }
