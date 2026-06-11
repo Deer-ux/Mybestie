@@ -77,43 +77,61 @@ export default function MatchingScreen() {
 
   async function handleFind() {
     if (!user) return;
+    console.log('[MyBestie] Find Someone clicked — user:', user.id, 'ageGroup:', user.ageGroup || 'adult');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     cancelledRef.current = false;
     setElapsed(0);
     setErrorMsg('');
+    // Show searching state immediately — before any network call
     setPhase('searching');
 
+    await joinPoolAndMaybeMatch();
+  }
+
+  async function joinPoolAndMaybeMatch() {
+    if (!user || cancelledRef.current) return;
+    const ageGroup = user.ageGroup || 'adult';
     try {
-      // Join the waiting pool (may immediately return a match)
+      console.log('[MyBestie] User added to waiting pool:', user.id);
       const resp = await fetch(`${apiBase()}/api/match/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId:            user.id,
           anonymousUsername: user.username,
-          ageGroup:          user.ageGroup || 'adult',
+          ageGroup,
           conversationMode:  'general',
           mood:              user.mood || '',
         }),
       });
 
-      if (!resp.ok) throw new Error('join failed');
-      const data = await resp.json() as { status: string; sessionId?: string; entryId?: string };
-
       if (cancelledRef.current) return;
 
+      if (!resp.ok) {
+        console.log('[MyBestie] Searching for match — server unavailable, will retry via poll');
+        // Server error: still show searching, rely on polling to retry
+        startPolling();
+        return;
+      }
+
+      const data = await resp.json() as { status: string; sessionId?: string };
+      console.log('[MyBestie] Searching for match — server response:', data.status);
+
       if (data.status === 'matched' && data.sessionId) {
+        console.log('[MyBestie] Match found! sessionId:', data.sessionId);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.replace(`/chat/${data.sessionId}`);
         return;
       }
 
-      // No immediate match — start polling
+      // No immediate match — start polling every 2 s
+      console.log('[MyBestie] No match yet — starting poll');
       startPolling();
-    } catch {
+    } catch (err) {
+      console.log('[MyBestie] Network error joining pool:', err);
       if (cancelledRef.current) return;
-      setErrorMsg('Could not reach the server. Check your connection.');
-      setPhase('no_match');
+      // Don't show no_match immediately — keep searching state, retry via poll
+      startPolling();
     }
   }
 
@@ -139,16 +157,28 @@ export default function MatchingScreen() {
       if (cancelledRef.current || !user?.id) return;
       try {
         const resp = await fetch(`${apiBase()}/api/match/status/${user.id}`);
-        if (!resp.ok) return;
+        if (!resp.ok) {
+          console.log('[MyBestie] No match yet — poll error', resp.status);
+          return;
+        }
         const data = await resp.json() as { status: string; sessionId?: string };
         if (data.status === 'matched' && data.sessionId) {
+          console.log('[MyBestie] Match found via poll! sessionId:', data.sessionId);
           stopPolling();
           if (!cancelledRef.current) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.replace(`/chat/${data.sessionId}`);
           }
+        } else if (data.status === 'not_found') {
+          // Our waiting record was cleaned up — re-add to pool
+          console.log('[MyBestie] No match yet — re-joining pool');
+          joinPoolAndMaybeMatch();
+        } else {
+          console.log('[MyBestie] No match yet — still waiting');
         }
-      } catch {}
+      } catch {
+        console.log('[MyBestie] No match yet — poll network error');
+      }
     }, 2000);
   }
 

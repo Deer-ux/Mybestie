@@ -11,7 +11,7 @@ import {
   SpaceGrotesk_700Bold,
 } from "@expo-google-fonts/space-grotesk";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, router, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, ReactNode } from "react";
 import { Platform } from "react-native";
@@ -24,6 +24,43 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { ChatProvider } from "@/context/ChatContext";
 import { InboxProvider } from "@/context/InboxContext";
+
+// Routes that require a logged-in user. Any other path is public.
+const PROTECTED_PREFIXES = [
+  '/(tabs)',
+  '/matching',
+  '/conversation',
+  '/chat',
+  '/owner-dashboard',
+  '/admin',
+  '/analytics',
+  '/bridge-guide',
+  '/feedback',
+  '/send-message',
+];
+
+function RouteGuard() {
+  const { user, isLoading } = useApp();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (user) return; // logged in — nothing to do
+
+    const isProtected = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
+    if (!isProtected) return;
+
+    console.log('[MyBestie] Logged-out user on protected route', pathname, '— redirecting to /');
+    // Use hard redirect on web so all React state is fully reset
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.location.href = '/';
+    } else {
+      router.replace('/');
+    }
+  }, [user, isLoading, pathname]);
+
+  return null;
+}
 
 // Prevent native splash screen from auto-hiding — we hide it immediately
 // so the app never shows a blank white frame.
@@ -46,6 +83,8 @@ function InboxWrapper({ children }: { children: ReactNode }) {
 
 function RootLayoutNav() {
   return (
+    <>
+    <RouteGuard />
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
@@ -68,6 +107,7 @@ function RootLayoutNav() {
       <Stack.Screen name="admin/matching-debug" />
       <Stack.Screen name="chat/[sessionId]" />
     </Stack>
+    </>
   );
 }
 
