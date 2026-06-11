@@ -1,0 +1,1 @@
+- [Persistent anonymous accounts](persistent-accounts.md) — mybestie_user_id + mybestie_restore_token are NEVER removed on logout; logout only clears admin session + in-memory state.

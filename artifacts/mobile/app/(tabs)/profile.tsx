@@ -23,26 +23,32 @@ const GREEN = '#00FF88';
 const RED   = '#FF4455';
 const MUTED = 'rgba(255,255,255,0.50)';
 
-type ConfirmKind = 'logout' | 'reset' | null;
+type ConfirmKind = 'logout' | 'reset' | 'delete' | null;
 
 const CONFIRM_CONFIG = {
   logout: {
     title:   'Log Out?',
-    body:    'You will be returned to the landing page. Your anonymous data stays on this device.',
+    body:    'Your profile, badges, conversations, and inbox stay safe on this device. Tap Return To My Profile to come back anytime.',
     confirm: 'Log Out',
     color:   RED,
   },
   reset: {
-    title:   'Reset Profile?',
-    body:    'This will erase your entire profile, badges, and chat history and start fresh. This cannot be undone.',
-    confirm: 'Reset Everything',
+    title:   'Reset Preferences?',
+    body:    'This clears your mood, goal, personality, and onboarding settings. Your account, badges, conversations, and inbox are kept.',
+    confirm: 'Reset Preferences',
     color:   RED,
+  },
+  delete: {
+    title:   'Delete Account?',
+    body:    'This permanently deletes your profile, badges, messages, and anonymous inbox. This cannot be undone.',
+    confirm: 'Delete Forever',
+    color:   '#FF2020',
   },
 };
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, updateUser, resetUser, logout, isTeenMode } = useApp();
+  const { user, updateUser, resetUser, deleteAccount, logout, isTeenMode } = useApp();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
 
   const [adminTaps,   setAdminTaps]   = useState(0);
@@ -87,10 +93,13 @@ export default function ProfileScreen() {
     try {
       if (confirming === 'logout') {
         setConfirming(null);
-        await logout();         // logout() clears all state then navigates to /
+        await logout();
       } else if (confirming === 'reset') {
         setConfirming(null);
-        await resetUser();      // resetUser() clears all state then navigates to /
+        await resetUser();
+      } else if (confirming === 'delete') {
+        setConfirming(null);
+        await deleteAccount();
       }
     } finally {
       setBusy(false);
@@ -206,9 +215,9 @@ export default function ProfileScreen() {
 
           {/* ── Actions ── */}
           {[
-            { emoji: '🛡️', label: 'Safety Center',  bg: 'rgba(0,255,136,0.08)',  col: GREEN, onPress: () => router.push('/safety')        },
-            { emoji: '🌟', label: 'View All Badges', bg: 'rgba(255,45,149,0.08)', col: PINK,  onPress: () => router.push('/(tabs)/badges') },
-            { emoji: '🔄', label: 'Reset Profile',   bg: 'rgba(255,68,85,0.08)',  col: RED,   onPress: () => askConfirm('reset')           },
+            { emoji: '🛡️', label: 'Safety Center',      bg: 'rgba(0,255,136,0.08)',  col: GREEN, onPress: () => router.push('/safety')        },
+            { emoji: '🌟', label: 'View All Badges',     bg: 'rgba(255,45,149,0.08)', col: PINK,  onPress: () => router.push('/(tabs)/badges') },
+            { emoji: '🔄', label: 'Reset Preferences',   bg: 'rgba(255,68,85,0.08)',  col: RED,   onPress: () => askConfirm('reset')           },
           ].map((action, i) => (
             <TouchableOpacity
               key={i}
@@ -222,7 +231,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           ))}
 
-          {/* ── Logout (prominent) ── */}
+          {/* ── Log Out ── */}
           <TouchableOpacity
             onPress={() => askConfirm('logout')}
             style={styles.logoutFullBtn}
@@ -234,6 +243,21 @@ export default function ProfileScreen() {
             >
               <Ionicons name="log-out-outline" size={20} color={RED} />
               <Text style={styles.logoutFullText}>Log Out</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* ── Delete Account ── */}
+          <TouchableOpacity
+            onPress={() => askConfirm('delete')}
+            style={[styles.logoutFullBtn, { borderColor: 'rgba(255,32,32,0.25)' }]}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={['rgba(255,32,32,0.12)', 'rgba(255,32,32,0.05)']}
+              style={styles.logoutFullGrad}
+            >
+              <Ionicons name="trash-outline" size={20} color="#FF2020" />
+              <Text style={[styles.logoutFullText, { color: '#FF2020' }]}>Delete Account</Text>
             </LinearGradient>
           </TouchableOpacity>
 
@@ -256,7 +280,7 @@ export default function ProfileScreen() {
             {/* Icon */}
             <View style={[styles.modalIcon, { backgroundColor: `${cfg?.color ?? RED}20` }]}>
               <Text style={{ fontSize: 32 }}>
-                {confirming === 'logout' ? '🚪' : '🔄'}
+                {confirming === 'logout' ? '🚪' : confirming === 'delete' ? '🗑️' : '🔄'}
               </Text>
             </View>
 

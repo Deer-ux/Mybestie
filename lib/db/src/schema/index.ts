@@ -3,3 +3,6 @@ export * from "./messages";
 export * from "./waiting_pool";
 export * from "./chat_sessions";
 export * from "./chat_messages";
+export * from "./users";
+export * from "./user_badges";
+export * from "./anonymous_messages";

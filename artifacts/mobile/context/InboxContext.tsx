@@ -1,16 +1,17 @@
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export const MESSAGE_TTL_MS = 2 * 24 * 60 * 60 * 1000; // 48 h (kept for UI display only)
+
 export type MessageCategory =
   | 'compliment' | 'question' | 'advice' | 'confession'
   | 'encouragement' | 'feedback' | 'other';
 
 export type ModerationStatus = 'approved' | 'hidden';
 
-export const MESSAGE_TTL_MS = 2 * 24 * 60 * 60 * 1000; // 48 hours
-
 export interface AnonymousMessage {
   id: string;
+  recipientUserId: string;
   recipientSlug: string;
   category: MessageCategory;
   content: string;
@@ -39,131 +40,196 @@ interface InboxContextType {
 
 const InboxContext = createContext<InboxContextType | undefined>(undefined);
 
-function makeId() { return Date.now().toString() + Math.random().toString(36).substr(2, 9); }
 function makeFingerprint() { return Math.random().toString(36).substr(2, 16); }
 
-// Remove messages older than MESSAGE_TTL_MS, unless the user saved them
-function purgeExpired(msgs: AnonymousMessage[]): { kept: AnonymousMessage[]; removed: number } {
-  const cutoff = Date.now() - MESSAGE_TTL_MS;
-  const kept = msgs.filter(m => {
-    if (m.isSaved) return true; // saved messages never expire
-    return new Date(m.timestamp).getTime() > cutoff;
-  });
-  return { kept, removed: msgs.length - kept.length };
+function apiBase(): string {
+  if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin;
+  return '';
 }
 
-const EXTREME_BLOCKED = [
-  'kill yourself', 'kys', 'go kill yourself', 'i will kill you', 'i will find you',
-  'i know where you live', 'come to your house', 'show up at your',
-  'send nudes', 'send me nudes', 'nude pic', 'sex with me', 'rape you', 'molest',
-  'cut yourself', 'harm yourself', 'end your life', 'end it all', 'you should die',
-  'bomb', 'shooting', 'stab you',
-  'doxx', 'your real name is', 'your address is', 'your phone is',
-  'bit.ly', 'tinyurl', 'click here for free', 'free money transfer', 'send $', 'bitcoin scam',
-  '@gmail.com', '@yahoo.com', '@hotmail', 'telegram me at', 'whatsapp me at',
-];
-
-function moderateContent(content: string): ModerationStatus {
-  const lower = content.toLowerCase();
-  if (EXTREME_BLOCKED.some(p => lower.includes(p))) return 'hidden';
-  return 'approved';
+// Normalize DB row → local AnonymousMessage shape
+function fromDb(row: {
+  id: string;
+  recipientUserId: string;
+  recipientSlug: string;
+  category: string;
+  content: string;
+  senderFingerprint: string;
+  moderationStatus: string;
+  isRead: boolean;
+  isSaved: boolean;
+  isReported: boolean;
+  publicReply?: string | null;
+  createdAt: string;
+}): AnonymousMessage {
+  return {
+    id:                row.id,
+    recipientUserId:   row.recipientUserId,
+    recipientSlug:     row.recipientSlug,
+    category:          row.category as MessageCategory,
+    content:           row.content,
+    timestamp:         row.createdAt,
+    senderFingerprint: row.senderFingerprint,
+    moderationStatus:  row.moderationStatus as ModerationStatus,
+    isRead:            row.isRead,
+    isSaved:           row.isSaved,
+    isReported:        row.isReported,
+    publicReply:       row.publicReply ?? undefined,
+  };
 }
 
-export function InboxProvider({ children, userSlug }: { children: ReactNode; userSlug?: string }) {
+export function InboxProvider({
+  children,
+  userSlug,
+  userId,
+}: {
+  children: ReactNode;
+  userSlug?: string;
+  userId?: string;
+}) {
   const [messages, setMessages] = useState<AnonymousMessage[]>([]);
-  const currentSlugRef = useRef<string>('');
+  const currentSlugRef   = useRef<string>('');
+  const currentUserIdRef = useRef<string>('');
 
-  const approved = messages.filter(m => m.moderationStatus === 'approved' && !m.isReported);
+  const approved    = messages.filter(m => m.moderationStatus === 'approved' && !m.isReported);
   const unreadCount = approved.filter(m => !m.isRead).length;
-  const totalCount = messages.length;
+  const totalCount  = messages.length;
 
   useEffect(() => {
-    if (userSlug) {
-      currentSlugRef.current = userSlug;
-      loadMessagesForSlug(userSlug);
+    if (userId && userSlug) {
+      currentSlugRef.current   = userSlug;
+      currentUserIdRef.current = userId;
+      loadFromApi(userId);
     } else {
       setMessages([]);
     }
-  }, [userSlug]);
+  }, [userId, userSlug]);
 
-  async function loadMessagesForSlug(slug: string) {
-    if (!slug) { setMessages([]); return; }
-    currentSlugRef.current = slug;
+  // ── Load from API (primary) with AsyncStorage cache fallback ─────────────
+  async function loadFromApi(uid: string) {
     try {
-      const stored = await AsyncStorage.getItem(`@inbox_${slug}`);
-      const raw: AnonymousMessage[] = stored ? JSON.parse(stored) : [];
-      const { kept, removed } = purgeExpired(raw);
-      // Persist the purged list if any messages were expired
-      if (removed > 0) {
-        await AsyncStorage.setItem(`@inbox_${slug}`, JSON.stringify(kept));
+      const resp = await fetch(`${apiBase()}/api/inbox/${uid}`);
+      if (resp.ok) {
+        const data = await resp.json() as { messages: Parameters<typeof fromDb>[0][] };
+        const msgs = data.messages.map(fromDb);
+        setMessages(msgs);
+        // Persist cache for offline use
+        await AsyncStorage.setItem(`@inbox_${uid}`, JSON.stringify(msgs));
+        return;
       }
-      setMessages(kept);
+    } catch {}
+
+    // Offline fallback: try the local cache
+    try {
+      const cached = await AsyncStorage.getItem(`@inbox_${uid}`);
+      if (cached) {
+        setMessages(JSON.parse(cached) as AnonymousMessage[]);
+      }
     } catch {
       setMessages([]);
     }
   }
 
+  async function loadMessagesForSlug(slug: string) {
+    currentSlugRef.current = slug;
+    if (currentUserIdRef.current) {
+      await loadFromApi(currentUserIdRef.current);
+    }
+  }
+
   async function refreshInbox() {
-    if (currentSlugRef.current) {
-      await loadMessagesForSlug(currentSlugRef.current);
+    if (currentUserIdRef.current) {
+      await loadFromApi(currentUserIdRef.current);
     }
   }
 
-  async function persist(updated: AnonymousMessage[]) {
-    // Always purge on write too — ensures saved state is consistent
-    const { kept } = purgeExpired(updated);
-    setMessages(kept);
-    const slug = currentSlugRef.current;
-    if (slug) {
-      await AsyncStorage.setItem(`@inbox_${slug}`, JSON.stringify(kept));
-    }
+  // Optimistic update helper — patches local state then syncs to API
+  async function patchMessage(
+    id: string,
+    patch: Partial<Pick<AnonymousMessage, 'isRead' | 'isSaved' | 'isReported' | 'publicReply'>>,
+    optimistic: (m: AnonymousMessage) => AnonymousMessage,
+  ) {
+    const uid = currentUserIdRef.current;
+    setMessages(prev => prev.map(m => m.id === id ? optimistic(m) : m));
+    if (!uid) return;
+    try {
+      await fetch(`${apiBase()}/api/inbox/${uid}/messages/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+    } catch {}
   }
 
-  async function sendMessage(recipientSlug: string, category: MessageCategory, content: string) {
+  function markAsRead(id: string) {
+    patchMessage(id, { isRead: true }, m => ({ ...m, isRead: true }));
+  }
+
+  function saveMessage(id: string) {
+    setMessages(prev => {
+      const updated = prev.map(m => m.id === id ? { ...m, isSaved: !m.isSaved } : m);
+      const uid = currentUserIdRef.current;
+      if (uid) {
+        const msg = updated.find(m => m.id === id);
+        if (msg) {
+          fetch(`${apiBase()}/api/inbox/${uid}/messages/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isSaved: msg.isSaved }),
+          }).catch(() => {});
+        }
+      }
+      return updated;
+    });
+  }
+
+  async function deleteMessage(id: string) {
+    const uid = currentUserIdRef.current;
+    setMessages(prev => prev.filter(m => m.id !== id));
+    if (!uid) return;
+    try {
+      await fetch(`${apiBase()}/api/inbox/${uid}/messages/${id}`, { method: 'DELETE' });
+    } catch {}
+  }
+
+  function reportMessage(id: string) {
+    patchMessage(id, { isReported: true }, m => ({ ...m, isReported: true }));
+  }
+
+  function replyToMessage(id: string, reply: string) {
+    patchMessage(id, { publicReply: reply, isRead: true }, m => ({ ...m, publicReply: reply, isRead: true }));
+  }
+
+  async function sendMessage(
+    recipientSlug: string,
+    category: MessageCategory,
+    content: string,
+  ): Promise<{ success: boolean; blocked?: boolean }> {
     if (!content.trim() || content.trim().length < 2) return { success: false };
 
-    const status = moderateContent(content);
-    const newMsg: AnonymousMessage = {
-      id: makeId(),
-      recipientSlug,
-      category,
-      content: content.trim(),
-      timestamp: new Date().toISOString(),
-      senderFingerprint: makeFingerprint(),
-      moderationStatus: status,
-      isRead: false,
-      isSaved: false,
-      isReported: false,
-    };
-
     try {
-      const stored = await AsyncStorage.getItem(`@inbox_${recipientSlug}`);
-      const existing: AnonymousMessage[] = stored ? JSON.parse(stored) : [];
-      const { kept } = purgeExpired(existing);
-      const updated = [newMsg, ...kept];
-      await AsyncStorage.setItem(`@inbox_${recipientSlug}`, JSON.stringify(updated));
-      if (currentSlugRef.current === recipientSlug) {
-        setMessages(updated);
-      }
-      return { success: true, blocked: status === 'hidden' };
+      const resp = await fetch(`${apiBase()}/api/inbox/${recipientSlug}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category,
+          content,
+          senderFingerprint: makeFingerprint(),
+        }),
+      });
+      if (!resp.ok) return { success: false };
+      const data = await resp.json() as { blocked?: boolean };
+      return { success: true, blocked: data.blocked };
     } catch {
       return { success: false };
     }
   }
 
-  function markAsRead(id: string)   { persist(messages.map(m => m.id === id ? { ...m, isRead: true } : m)); }
-  function saveMessage(id: string)  { persist(messages.map(m => m.id === id ? { ...m, isSaved: !m.isSaved } : m)); }
-  function deleteMessage(id: string){ persist(messages.filter(m => m.id !== id)); }
-  function reportMessage(id: string){ persist(messages.map(m => m.id === id ? { ...m, isReported: true } : m)); }
-  function replyToMessage(id: string, reply: string) {
-    persist(messages.map(m => m.id === id ? { ...m, publicReply: reply, isRead: true } : m));
-  }
-
   return (
     <InboxContext.Provider value={{
-      messages, unreadCount, totalCount, sendMessage,
-      markAsRead, saveMessage, deleteMessage, reportMessage, replyToMessage,
-      loadMessagesForSlug, refreshInbox,
+      messages, unreadCount, totalCount,
+      sendMessage, markAsRead, saveMessage, deleteMessage,
+      reportMessage, replyToMessage, loadMessagesForSlug, refreshInbox,
     }}>
       {children}
     </InboxContext.Provider>

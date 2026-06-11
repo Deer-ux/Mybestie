@@ -77,8 +77,9 @@ const queryClient = new QueryClient({
 
 function InboxWrapper({ children }: { children: ReactNode }) {
   const { user } = useApp();
-  const slug = user?.username?.toLowerCase().replace(/[^a-z0-9]/g, "") ?? "";
-  return <InboxProvider userSlug={slug}>{children}</InboxProvider>;
+  const slug   = user?.slug ?? user?.username?.toLowerCase().replace(/[^a-z0-9]/g, "") ?? "";
+  const userId = user?.id ?? "";
+  return <InboxProvider userSlug={slug} userId={userId}>{children}</InboxProvider>;
 }
 
 function RootLayoutNav() {
