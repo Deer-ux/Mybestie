@@ -87,12 +87,10 @@ export default function ProfileScreen() {
     try {
       if (confirming === 'logout') {
         setConfirming(null);
-        router.replace('/');
-        await logout();
+        await logout();         // logout() clears all state then navigates to /
       } else if (confirming === 'reset') {
         setConfirming(null);
-        router.replace('/');
-        await resetUser();
+        await resetUser();      // resetUser() clears all state then navigates to /
       }
     } finally {
       setBusy(false);

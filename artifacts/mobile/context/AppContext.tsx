@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import { router } from 'expo-router';
 import { generateUsername, generateAvatarConfig } from '@/utils/helpers';
 import { trackEvent } from '@/utils/analytics';
 
@@ -241,6 +243,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (toRemove.length > 0) await AsyncStorage.multiRemove(toRemove);
     } catch {}
     setUser(null);
+    navigateToLanding();
   }
 
   async function logout() {
@@ -251,6 +254,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (toRemove.length > 0) await AsyncStorage.multiRemove(toRemove);
     } catch {}
     setUser(null);
+    navigateToLanding();
+  }
+
+  function navigateToLanding() {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.location.replace('/');
+    } else {
+      router.replace('/');
+    }
   }
 
   return (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, Platform, ActivityIndicator,
@@ -39,7 +39,7 @@ type ReturnState = 'idle' | 'loading' | 'not_found';
 
 export default function LandingScreen() {
   const insets = useSafeAreaInsets();
-  const { user, isLoading, createAnonymousSession, restoreSession } = useApp();
+  const { createAnonymousSession, restoreSession } = useApp();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
@@ -51,26 +51,8 @@ export default function LandingScreen() {
   const [showOwner,    setShowOwner]    = useState(false);
   const [ownerTaps,    setOwnerTaps]    = useState(0);
 
-  // Route based on session state once loading finishes
-  useEffect(() => {
-    if (isLoading) return;
-    if (user?.role === 'owner' || user?.isAdmin) {
-      router.replace('/owner-dashboard');
-    } else if (user?.isOnboarded) {
-      router.replace('/(tabs)/home');
-    } else if (user && !user.isOnboarded) {
-      // Has a session but hasn't finished onboarding — resume it
-      router.replace('/onboarding');
-    }
-  }, [isLoading, user]);
-
-  if (isLoading) {
-    return (
-      <View style={styles.loadingScreen}>
-        <ActivityIndicator color={PINK} size="large" />
-      </View>
-    );
-  }
+  // No auto-redirect: logged-in users who visit "/" see this landing page.
+  // They must tap "Return to My Profile" to go to the dashboard.
 
   // ── Action handlers ────────────────────────────────────────────────────────
 
