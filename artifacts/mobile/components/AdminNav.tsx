@@ -10,13 +10,14 @@ const MUTED  = 'rgba(255,255,255,0.45)';
 const RED    = '#FF4455';
 
 const NAV_ITEMS = [
-  { icon: 'grid-outline',         label: 'Dashboard', route: '/owner-dashboard'  },
-  { icon: 'bar-chart-outline',    label: 'Analytics',  route: '/analytics'        },
-  { icon: 'shield-outline',       label: 'Moderation', route: '/admin'            },
-  { icon: 'people-outline',       label: 'Users',      route: '/admin/users'      },
-  { icon: 'chatbubble-outline',   label: 'Messages',   route: '/admin/messages'   },
-  { icon: 'flag-outline',         label: 'Reports',    route: '/admin/reports'    },
-  { icon: 'settings-outline',     label: 'Settings',   route: '/admin/settings'   },
+  { icon: 'grid-outline',         label: 'Dashboard', route: '/owner-dashboard'        },
+  { icon: 'bar-chart-outline',    label: 'Analytics',  route: '/analytics'             },
+  { icon: 'shield-outline',       label: 'Moderation', route: '/admin'                 },
+  { icon: 'people-outline',       label: 'Users',      route: '/admin/users'           },
+  { icon: 'chatbubble-outline',   label: 'Messages',   route: '/admin/messages'        },
+  { icon: 'flag-outline',         label: 'Reports',    route: '/admin/reports'         },
+  { icon: 'settings-outline',     label: 'Settings',   route: '/admin/settings'        },
+  { icon: 'git-network-outline',  label: 'Matching',   route: '/admin/matching-debug'  },
 ] as const;
 
 interface AdminNavProps {

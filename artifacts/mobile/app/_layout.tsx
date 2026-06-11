@@ -65,6 +65,8 @@ function RootLayoutNav() {
       <Stack.Screen name="admin/messages" />
       <Stack.Screen name="admin/reports" />
       <Stack.Screen name="admin/settings" />
+      <Stack.Screen name="admin/matching-debug" />
+      <Stack.Screen name="chat/[sessionId]" />
     </Stack>
   );
 }
