@@ -357,12 +357,18 @@ export interface QuickAction {
 }
 
 export const QUICK_ACTIONS: QuickAction[] = [
-  { label: 'Learn a skill',   text: 'What skills should I learn today?',                  emoji: '💡' },
-  { label: 'Find a job',      text: 'How do I find a good job?',                          emoji: '💼' },
-  { label: 'Study tips',      text: 'How do I study more effectively?',                   emoji: '🎓' },
-  { label: 'Build habits',    text: 'How do I build better daily habits?',                emoji: '🚀' },
-  { label: 'Chat starters',   text: 'What are some good conversation starters?',          emoji: '💬' },
-  { label: 'Culture facts',   text: 'Tell me something interesting about world cultures', emoji: '🌍' },
+  { label: 'Learn a skill',     text: 'What skills should I learn to grow my career?',          emoji: '💡' },
+  { label: 'Career advice',     text: 'How do I find a good job and stand out?',                emoji: '💼' },
+  { label: 'Study smarter',     text: 'How do I study more effectively and remember more?',     emoji: '🎓' },
+  { label: 'Build habits',      text: 'How do I build better daily habits and stay consistent?', emoji: '🚀' },
+  { label: 'Health & wellness', text: 'What are some healthy habits I should build?',           emoji: '❤️' },
+  { label: 'Relationships',     text: 'How do I improve my communication in relationships?',    emoji: '🤝' },
+  { label: 'Business idea',     text: 'I have a business idea — how do I validate it?',        emoji: '💰' },
+  { label: 'Travel tips',       text: 'What are your best tips for travelling on a budget?',   emoji: '✈️' },
+  { label: 'Tech & AI',         text: 'How can I use AI tools to save time in my work?',       emoji: '🤖' },
+  { label: 'Creativity',        text: 'I want to start writing or creating — where do I begin?', emoji: '🎨' },
+  { label: 'Culture facts',     text: 'Tell me something interesting about world cultures',     emoji: '🌍' },
+  { label: 'Life advice',       text: 'I feel stuck in life — how do I figure out my next step?', emoji: '🌟' },
 ];
 
 // Keep HOW_ARE_YOU_PHRASES exported for re-use
