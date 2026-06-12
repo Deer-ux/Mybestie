@@ -24,3 +24,27 @@ id = "HXuVLNFpSxA-XbnxEM-I9"
 uri = "file://artifacts/mobile/assets/images/bridge_guide.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "fL4Tx-Y7TyAtwnHHU_dkl"
+uri = "file://artifacts/mybestie-explainer/public/images/bg-grid.png"
+type = "image"
+title = "dark neon grid background"
+
+[[generated]]
+id = "PgBkUj2DC6ucOFqDQcg8t"
+uri = "file://artifacts/mybestie-explainer/public/images/avatar1.png"
+type = "image"
+title = "abstract avatar 1"
+
+[[generated]]
+id = "Llb_KHfRkeyQhAG4xP_1G"
+uri = "file://artifacts/mybestie-explainer/public/images/avatar2.png"
+type = "image"
+title = "abstract avatar 2"
+
+[[generated]]
+id = "U3KTQFEe411imSp3I8Olw"
+uri = "file://artifacts/mybestie-explainer/public/images/badge.png"
+type = "image"
+title = "badge icon"

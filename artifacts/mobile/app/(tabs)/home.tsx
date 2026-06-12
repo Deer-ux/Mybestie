@@ -159,9 +159,9 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.aiInfo}>
                   <Text style={styles.aiName}>Bestie AI</Text>
-                  <Text style={styles.aiTagline}>Career · Study · Habits · Culture · Chat</Text>
+                  <Text style={styles.aiTagline}>Career · Health · Travel · Business · Life</Text>
                   <View style={styles.aiChipsRow}>
-                    {['💼 Skills', '🎓 Education', '🚀 Growth', '💬 Starters'].map(c => (
+                    {['💼 Career', '❤️ Health', '🎓 Study', '🤖 Tech', '🌟 Life'].map(c => (
                       <View key={c} style={styles.aiChip}>
                         <Text style={styles.aiChipText}>{c}</Text>
                       </View>

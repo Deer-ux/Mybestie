@@ -91,9 +91,9 @@ const CHAT_KEYWORDS = [
 ];
 
 const APP_KEYWORDS = [
-  'how does this app work', 'what is mindbridge', 'how do i', 'how to use',
+  'how does this app work', 'what is mybestie', 'how do i', 'how to use',
   'anonymous link', 'what can you do', 'what are you', 'who are you',
-  'what is bridgeguide', 'app help',
+  'what is bestie ai', 'app help',
 ];
 
 const GREETING_EXACT = new Set([

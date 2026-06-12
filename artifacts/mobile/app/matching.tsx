@@ -328,7 +328,7 @@ export default function MatchingScreen() {
 
             <Text style={styles.searchTitle}>Still searching…</Text>
             <Text style={styles.searchSub}>
-              No match yet — keep waiting or talk to Bestie AI while you wait.
+              No one is available yet. You can keep waiting or ask Bestie AI anything while you wait.
             </Text>
 
             <TouchableOpacity
@@ -360,9 +360,9 @@ export default function MatchingScreen() {
               <Text style={{ fontSize: 52 }}>😔</Text>
             </View>
 
-            <Text style={styles.noMatchTitle}>No one is available right now</Text>
+            <Text style={styles.noMatchTitle}>No one is available yet</Text>
             <Text style={styles.noMatchSub}>
-              {errorMsg || 'We searched for 2 minutes but no one in your age group was waiting. Try again soon or talk to Bestie AI.'}
+              {errorMsg || 'No one is available yet. You can keep waiting or ask Bestie AI anything while you wait.'}
             </Text>
 
             <TouchableOpacity
