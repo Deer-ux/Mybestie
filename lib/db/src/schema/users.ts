@@ -15,6 +15,7 @@ export const users = pgTable("users", {
   temperament:    text("temperament").notNull().default(""),
   totalChats:     integer("total_chats").notNull().default(0),
   positiveStreak: integer("positive_streak").notNull().default(0),
+  passwordHash:   text("password_hash"),
   isOnboarded:    boolean("is_onboarded").notNull().default(false),
   isAdmin:        boolean("is_admin").notNull().default(false),
   createdAt:      timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

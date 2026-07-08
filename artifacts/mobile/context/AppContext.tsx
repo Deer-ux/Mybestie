@@ -42,6 +42,8 @@ interface AppContextType {
   isLoading:              boolean;
   isTeenMode:             boolean;
   createAnonymousSession: () => Promise<void>;
+  registerWithPassword:   (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  loginWithPassword:      (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   restoreSession:         () => Promise<boolean>;
   ownerLogin:             (code: string) => Promise<{ ok: boolean; error?: string }>;
   updateUser:             (updates: Partial<UserProfile>) => Promise<void>;
@@ -457,10 +459,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
     navigateToLanding();
   }
 
+  async function registerWithPassword(username: string, password: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const resp = await fetch(`${apiBase()}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await resp.json() as { user?: UserProfile & { restoreToken: string }; error?: string };
+      if (!resp.ok || !data.user) return { ok: false, error: data.error ?? 'Registration failed.' };
+
+      await AsyncStorage.setItem(USER_ID_KEY, data.user.id);
+      await AsyncStorage.setItem(RESTORE_TOKEN_KEY, data.user.restoreToken);
+      const profile = apiUserToProfile(data.user);
+      await AsyncStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
+      setUser(profile);
+      trackEvent('user_registered', data.user.id);
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'Could not reach the server. Please try again.' };
+    }
+  }
+
+  async function loginWithPassword(username: string, password: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const resp = await fetch(`${apiBase()}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await resp.json() as { user?: UserProfile & { restoreToken: string }; error?: string };
+      if (!resp.ok || !data.user) return { ok: false, error: data.error ?? 'Login failed.' };
+
+      await AsyncStorage.setItem(USER_ID_KEY, data.user.id);
+      await AsyncStorage.setItem(RESTORE_TOKEN_KEY, data.user.restoreToken);
+      const profile = apiUserToProfile(data.user);
+      await AsyncStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
+      setUser(profile);
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'Could not reach the server. Please try again.' };
+    }
+  }
+
   return (
     <AppContext.Provider value={{
       user, isLoading, isTeenMode,
-      createAnonymousSession, restoreSession, ownerLogin,
+      createAnonymousSession, registerWithPassword, loginWithPassword,
+      restoreSession, ownerLogin,
       updateUser, completeOnboarding, addBadge, incrementChats,
       resetUser, deleteAccount, logout,
     }}>

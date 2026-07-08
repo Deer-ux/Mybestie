@@ -142,11 +142,10 @@ export default function LandingScreen() {
           {/* ── Auth actions ── */}
           <Animated.View entering={FadeInDown.delay(180).springify()} style={styles.actionsBlock}>
 
-            {/* 1. Start Connecting */}
+            {/* 1. Create Account / Log In (primary) */}
             <TouchableOpacity
-              onPress={handleStartConnecting}
-              disabled={startingUp}
-              style={[styles.primaryBtnWrap, startingUp && { opacity: 0.7 }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push('/auth'); }}
+              style={styles.primaryBtnWrap}
               activeOpacity={0.88}
             >
               <LinearGradient
@@ -155,12 +154,9 @@ export default function LandingScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.primaryBtn}
               >
-                {startingUp
-                  ? <ActivityIndicator color="#FFFFFF" />
-                  : <Text style={styles.primaryBtnText}>✨  Start Connecting</Text>
-                }
+                <Text style={styles.primaryBtnText}>✨  Create Account / Log In</Text>
               </LinearGradient>
-              <Text style={styles.btnSub}>Create a new anonymous identity</Text>
+              <Text style={styles.btnSub}>Pick a username — no email or phone needed</Text>
             </TouchableOpacity>
 
             {/* Divider */}
@@ -170,45 +166,25 @@ export default function LandingScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            {/* 2. Return to My Profile */}
+            {/* 2. Continue anonymously (secondary) */}
             <View style={styles.secondaryGroup}>
               <TouchableOpacity
-                onPress={handleReturnProfile}
-                disabled={returnState === 'loading'}
+                onPress={handleStartConnecting}
+                disabled={startingUp}
                 style={styles.secondaryBtn}
                 activeOpacity={0.85}
               >
-                {returnState === 'loading'
+                {startingUp
                   ? <ActivityIndicator color={CYAN} size="small" />
                   : (
                     <>
-                      <Ionicons name="person-circle-outline" size={20} color={CYAN} />
-                      <Text style={styles.secondaryBtnText}>Return to My Profile</Text>
+                      <Ionicons name="person-outline" size={20} color={CYAN} />
+                      <Text style={styles.secondaryBtnText}>Continue Anonymously</Text>
                     </>
                   )
                 }
               </TouchableOpacity>
-              <Text style={styles.btnSub}>Continue your anonymous session on this device</Text>
-
-              {/* No-profile-found error */}
-              {returnState === 'not_found' && (
-                <Animated.View entering={FadeInDown.springify()} style={styles.notFoundCard}>
-                  <Text style={{ fontSize: 18 }}>🔍</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.notFoundTitle}>No profile found on this device</Text>
-                    <Text style={styles.notFoundBody}>
-                      Your session may have been cleared. Start fresh with a new anonymous profile.
-                    </Text>
-                    <TouchableOpacity
-                      onPress={handleStartConnecting}
-                      style={styles.notFoundAction}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={styles.notFoundActionText}>✨ Create new profile</Text>
-                    </TouchableOpacity>
-                  </View>
-                </Animated.View>
-              )}
+              <Text style={styles.btnSub}>Quick start — no account needed, device-only</Text>
             </View>
 
             {/* 3. Have a code? (small link → expandable input) */}
