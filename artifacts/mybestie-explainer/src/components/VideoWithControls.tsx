@@ -191,7 +191,7 @@ export default function VideoWithControls() {
 
   const barVisible = !collapsed || hovering || tapPinned;
 
-  if (!isIframed) return <VideoTemplate />;
+  if (!isIframed) return <VideoTemplate loop={false} />;
 
   return (
     <div className="relative w-full h-screen">
