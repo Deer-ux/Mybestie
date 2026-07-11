@@ -42,7 +42,8 @@ export function Scene6() {
           Your anonymous bestie, always there.
         </motion.p>
 
-        <motion.div
+        <motion.a
+          href="https://mybestie-mobile-g6bp.vercel.app/"
           className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] p-[2px] rounded-full overflow-hidden cursor-pointer"
           initial={{ opacity: 0, scale: 0.8, y: 20 }}
           animate={phase >= 2 ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.8, y: 20 }}
@@ -54,7 +55,7 @@ export function Scene6() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
           </div>
-        </motion.div>
+        </motion.a>
 
       </div>
     </motion.div>
